@@ -81,10 +81,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <ToastProvider>
-            {/* useSearchParams in AnalyticsProvider needs a Suspense boundary. */}
+            {/* AnalyticsProvider uses useSearchParams which causes a CSR
+                bailout. We render it as a SIBLING (not a wrapper) so that
+                bailout only affects the empty sidecar, not the page tree. */}
             <Suspense fallback={null}>
-              <AnalyticsProvider>{children}</AnalyticsProvider>
+              <AnalyticsProvider />
             </Suspense>
+            {children}
           </ToastProvider>
         </ThemeProvider>
       </body>

@@ -1,13 +1,15 @@
 "use client";
 
-// Client-only provider that boots PostHog + fires $pageview on
-// soft navigations (Next.js App Router doesn't auto-fire those).
+// Sidecar component — boots PostHog and fires $pageview on soft
+// navigations. Renders no DOM, takes no children. Placed as a
+// SIBLING of the page tree (not a wrapper) so its `useSearchParams`
+// bailout doesn't cascade the whole app to client-side rendering.
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { initAnalytics, track } from "@/lib/analytics/posthog";
 
-export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+export function AnalyticsProvider() {
   const pathname = usePathname();
   const search = useSearchParams();
 
@@ -21,5 +23,5 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     track("$pageview", { $current_url: url });
   }, [pathname, search]);
 
-  return <>{children}</>;
+  return null;
 }
