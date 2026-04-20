@@ -1,26 +1,443 @@
 @import "tailwindcss";
 
+/* ============================================================
+ * Fixpass — Navy Atelier design tokens.
+ * ------------------------------------------------------------
+ * Ported verbatim from the mobile app's constants/theme.ts so
+ * both surfaces stay visually coherent. If a token changes in
+ * mobile, change it here the same way — both get built from
+ * one source of truth (these CSS variables, encoded as RGB
+ * triplets so Tailwind's `rgb(var(--x) / <alpha-value>)` syntax
+ * can apply opacity cleanly).
+ *
+ * Semantic keys match mobile:
+ *   canvas / canvasElevated / surface / surfaceMuted
+ *   ink / inkMuted / inkSubtle
+ *   royal / royalSoft / royalInk / royalDeep  (primary accent)
+ *   emerald / emeraldSoft / emeraldInk        (success, growth)
+ *   sky / skySoft / skyInk                    (info, bright pop)
+ *   lapis / lapisSoft / lapisInk              (hero gradients)
+ *   basil / basilSoft / basilInk              (nature accent)
+ *   honey / honeySoft                         (small highlights)
+ *   cream / creamInk                          (chips, tags)
+ *   brick / brickInk / brickSoft              (danger)
+ *   border / borderStrong / overlay
+ *
+ * Light + dark share these names; .dark overrides. Components
+ * should NEVER branch on scheme — they just read tokens.
+ * ========================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas:           244 247 251;   /* #F4F7FB */
+  --canvas-elevated:  251 252 254;   /* #FBFCFE */
+  --surface:          255 255 255;   /* #FFFFFF */
+  --surface-muted:    238 242 249;   /* #EEF2F9 */
+
+  /* Inks (text) */
+  --ink:              11 27 58;      /* #0B1B3A */
+  --ink-muted:        71 87 118;     /* #475776 */
+  --ink-subtle:       90 104 129;    /* #5A6881 */
+  --inverse-ink:      255 255 255;
+
+  /* Lines */
+  --border:           222 228 239;   /* #DEE4EF */
+  --border-strong:    196 206 222;   /* #C4CEDE */
+  --overlay:          11 27 58;
+
+  /* Emerald (primary green — success, growth) */
+  --emerald:          10 122 82;     /* #0A7A52 — WCAG AA on white */
+  --emerald-soft:     215 241 228;   /* #D7F1E4 */
+  --emerald-ink:      11 107 77;     /* #0B6B4D */
+
+  /* Royal (primary blue — CTAs, links) */
+  --royal:            31 79 209;     /* #1F4FD1 */
+  --royal-soft:       222 230 251;   /* #DEE6FB */
+  --royal-ink:        14 44 133;     /* #0E2C85 */
+  --royal-deep:       12 35 116;     /* #0C2374 */
+
+  /* Sky (bright pop blue — highlights, selection) */
+  --sky:              47 123 255;    /* #2F7BFF */
+  --sky-soft:         223 235 255;   /* #DFEBFF */
+  --sky-ink:          11 61 163;     /* #0B3DA3 */
+
+  /* Lapis (deeper blue — hero gradients) */
+  --lapis:            31 63 182;     /* #1F3FB6 */
+  --lapis-soft:       224 230 250;   /* #E0E6FA */
+  --lapis-ink:        10 31 107;     /* #0A1F6B */
+
+  /* Basil (deep green — nature accents) */
+  --basil:            47 111 79;     /* #2F6F4F */
+  --basil-soft:       221 237 225;   /* #DDEDE1 */
+  --basil-ink:        20 63 41;      /* #143F29 */
+
+  /* Honey (warm amber — small highlights, warnings) */
+  --honey:            232 196 108;   /* #E8C46C */
+  --honey-soft:       250 241 216;   /* #FAF1D8 */
+
+  /* Cream (pale yellow accent — chips, tags) */
+  --cream:            246 234 203;   /* #F6EACB */
+  --cream-ink:        122 90 27;     /* #7A5A1B */
+
+  /* Brick (danger) */
+  --brick:            210 63 90;     /* #D23F5A */
+  --brick-ink:        139 30 52;     /* #8B1E34 */
+  --brick-soft:       250 221 227;   /* #FADDE3 */
+
+  /* Ambient */
+  --shadow:           11 27 58;      /* navy-tinted shadow base */
+  --highlight:        255 255 255;
+
+  /* Typography fallbacks — real values injected by next/font */
+  --font-display-fallback: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans-fallback:    "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+.dark {
+  color-scheme: dark;
+
+  --canvas:           6 11 27;       /* #060B1B */
+  --canvas-elevated:  11 19 48;      /* #0B1330 */
+  --surface:          16 25 58;      /* #10193A */
+  --surface-muted:    22 34 71;      /* #162247 */
+
+  --ink:              234 240 252;   /* #EAF0FC */
+  --ink-muted:        167 179 210;   /* #A7B3D2 */
+  --ink-subtle:       135 149 184;   /* #8795B8 */
+  --inverse-ink:      11 27 58;
+
+  --border:           29 42 85;      /* #1D2A55 */
+  --border-strong:    42 59 114;     /* #2A3B72 */
+
+  --emerald:          63 210 154;    /* #3FD29A */
+  --emerald-soft:     15 46 36;
+  --emerald-ink:      138 232 191;
+
+  --royal:            57 85 194;     /* #3955C2 */
+  --royal-soft:       21 32 74;
+  --royal-ink:        185 199 255;
+  --royal-deep:       10 22 64;
+
+  --sky:              78 149 255;    /* #4E95FF */
+  --sky-soft:         19 33 70;
+  --sky-ink:          188 210 255;
+
+  --lapis:            78 109 232;    /* #4E6DE8 */
+  --lapis-soft:       18 27 69;
+  --lapis-ink:        199 209 250;
+
+  --basil:            78 154 116;    /* #4E9A74 */
+  --basil-soft:       13 31 25;
+  --basil-ink:        175 217 191;
+
+  --honey:            232 196 108;
+  --honey-soft:       42 35 15;
+
+  --cream:            232 196 108;
+  --cream-ink:        247 227 171;
+
+  --brick:            227 97 121;    /* #E36179 */
+  --brick-ink:        255 212 221;
+  --brick-soft:       46 20 27;
+
+  --shadow:           0 0 0;
+  --highlight:        30 42 80;
+}
+
+/* ============================================================
+ * Tailwind v4 theme — exposes every token above as a utility.
+ * "bg-canvas", "text-ink", "border-border-strong", etc.
+ * ========================================================== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas:           rgb(var(--canvas));
+  --color-canvas-elevated:  rgb(var(--canvas-elevated));
+  --color-surface:          rgb(var(--surface));
+  --color-surface-muted:    rgb(var(--surface-muted));
+
+  --color-ink:              rgb(var(--ink));
+  --color-ink-muted:        rgb(var(--ink-muted));
+  --color-ink-subtle:       rgb(var(--ink-subtle));
+  --color-inverse-ink:      rgb(var(--inverse-ink));
+
+  --color-border:           rgb(var(--border));
+  --color-border-strong:    rgb(var(--border-strong));
+
+  --color-royal:            rgb(var(--royal));
+  --color-royal-soft:       rgb(var(--royal-soft));
+  --color-royal-ink:        rgb(var(--royal-ink));
+  --color-royal-deep:       rgb(var(--royal-deep));
+
+  --color-emerald:          rgb(var(--emerald));
+  --color-emerald-soft:     rgb(var(--emerald-soft));
+  --color-emerald-ink:      rgb(var(--emerald-ink));
+
+  --color-sky:              rgb(var(--sky));
+  --color-sky-soft:         rgb(var(--sky-soft));
+  --color-sky-ink:          rgb(var(--sky-ink));
+
+  --color-lapis:            rgb(var(--lapis));
+  --color-lapis-soft:       rgb(var(--lapis-soft));
+  --color-lapis-ink:        rgb(var(--lapis-ink));
+
+  --color-basil:            rgb(var(--basil));
+  --color-basil-soft:       rgb(var(--basil-soft));
+  --color-basil-ink:        rgb(var(--basil-ink));
+
+  --color-honey:            rgb(var(--honey));
+  --color-honey-soft:       rgb(var(--honey-soft));
+
+  --color-cream:            rgb(var(--cream));
+  --color-cream-ink:        rgb(var(--cream-ink));
+
+  --color-brick:            rgb(var(--brick));
+  --color-brick-ink:        rgb(var(--brick-ink));
+  --color-brick-soft:       rgb(var(--brick-soft));
+
+  /* Fonts — next/font injects --font-fraunces, --font-inter. */
+  --font-display:  var(--font-fraunces, "Fraunces"), Georgia, "Times New Roman", serif;
+  --font-sans:     var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:     "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  /* Radius scale mirrors mobile — varied so nothing looks machine-stamped */
+  --radius-xs:      0.5rem;
+  --radius-sm:      0.875rem;
+  --radius-md:      1.125rem;
+  --radius-lg:      1.375rem;
+  --radius-xl:      1.75rem;
+  --radius-2xl:     2.25rem;
+  --radius-pill:    9999px;
+
+  /* Spring-ish easings to match mobile Reanimated feel */
+  --ease-out-spring:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-spring: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+ * Base styles
+ * ========================================================== */
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  color: rgb(var(--ink));
+  background: rgb(var(--canvas));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Ambient page wash — layered radial glows. Fixed so it doesn't scroll. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 600px at 0% -10%, rgb(var(--sky) / 0.07), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, rgb(var(--honey) / 0.06), transparent 55%),
+    radial-gradient(900px 500px at 50% 115%, rgb(var(--emerald) / 0.05), transparent 55%);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: rgb(var(--ink));
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: rgb(var(--royal) / 0.25);
+  color: rgb(var(--ink));
+}
+
+/* Respect reduced-motion — kills animations + transitions globally. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+ * Typography helpers — mirror mobile Typography scale.
+ * ========================================================== */
+
+.eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgb(var(--ink-muted));
+  font-family: var(--font-sans);
+}
+
+.eyebrow-light {
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgb(var(--inverse-ink) / 0.7);
+  font-family: var(--font-sans);
+}
+
+.display-hero {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.display-section {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+/* ============================================================
+ * Surface systems — mirror mobile card variants.
+ * ========================================================== */
+
+.surface-card {
+  background: linear-gradient(180deg, rgb(var(--surface)) 0%, rgb(var(--canvas-elevated)) 100%);
+  border: 1px solid rgb(var(--border));
+  box-shadow:
+    0 24px 64px -36px rgb(var(--shadow) / 0.16),
+    inset 0 1px 0 rgb(var(--highlight) / 0.5);
+}
+
+.surface-muted {
+  background: rgb(var(--surface-muted));
+  border: 1px solid rgb(var(--border) / 0.7);
+}
+
+.surface-dark {
+  background:
+    radial-gradient(circle at 15% 10%, rgb(var(--sky) / 0.22), transparent 45%),
+    radial-gradient(circle at 90% 100%, rgb(var(--honey) / 0.12), transparent 50%),
+    linear-gradient(145deg, rgb(var(--ink)) 0%, rgb(var(--royal)) 55%, rgb(var(--lapis)) 100%);
+  color: rgb(var(--inverse-ink));
+  box-shadow: 0 40px 120px -48px rgb(var(--shadow) / 0.5);
+}
+
+.surface-royal {
+  background: linear-gradient(135deg, rgb(var(--royal)) 0%, rgb(var(--lapis)) 70%, rgb(var(--sky)) 100%);
+  color: rgb(var(--inverse-ink));
+}
+
+.surface-glass {
+  background: rgb(var(--surface) / 0.7);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border: 1px solid rgb(var(--border) / 0.6);
+}
+
+/* ============================================================
+ * Form tokens
+ * ========================================================== */
+
+.fp-input {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--surface));
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: rgb(var(--ink));
+  font-family: var(--font-sans);
+  transition: border-color 160ms var(--ease-out-spring),
+              box-shadow 160ms var(--ease-out-spring),
+              background 160ms;
+}
+
+.fp-input::placeholder {
+  color: rgb(var(--ink-subtle));
+}
+
+.fp-input:focus {
+  outline: none;
+  border-color: rgb(var(--sky) / 0.55);
+  box-shadow: 0 0 0 4px rgb(var(--sky) / 0.22);
+}
+
+.fp-input[aria-invalid="true"] {
+  border-color: rgb(var(--brick) / 0.6);
+}
+
+.fp-input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 4px rgb(var(--brick) / 0.22);
+}
+
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(var(--sky) / 0.3);
+}
+
+/* ============================================================
+ * Decorative utilities
+ * ========================================================== */
+
+.grid-overlay {
+  background-image:
+    linear-gradient(rgb(var(--ink) / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--ink) / 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.link-underline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color 180ms ease;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.3;
+  transition: opacity 180ms ease;
+}
+.link-underline:hover::after {
+  opacity: 1;
+}
+
+/* ============================================================
+ * Keyframes
+ * ========================================================== */
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
 }
