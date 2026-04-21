@@ -1,28 +1,26 @@
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
+import { JsonLd, faqPageLd } from "@/lib/seo/jsonld";
 import { faqs } from "@/lib/config/site-data";
 
 export const metadata: Metadata = {
   title: "FAQ",
   description: "Common questions about Fixpass memberships, coverage, scheduling, and billing.",
-};
-
-// JSON-LD FAQPage — Google picks this up for rich-result snippets.
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((f) => ({
-    "@type": "Question",
-    name: f.q,
-    acceptedAnswer: { "@type": "Answer", text: f.a },
-  })),
+  alternates: { canonical: "https://www.getfixpass.com/faq" },
+  openGraph: {
+    title: "FAQ — Fixpass",
+    description: "Answers to every question we hear most often. Coverage, pricing, scheduling, billing.",
+    images: [
+      "/api/og?title=Answers.&eyebrow=Fixpass%20%E2%80%94%20FAQ&subtitle=What%20counts%20as%20covered%2C%20what%27s%20excluded%2C%20how%20billing%20works.",
+    ],
+  },
 };
 
 export default function FaqPage() {
   return (
     <main className="relative">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={[faqPageLd(faqs)]} />
 
       <section className="mx-auto max-w-3xl px-5 pb-10 pt-16 sm:px-8 lg:px-12 lg:pt-24">
         <Reveal>

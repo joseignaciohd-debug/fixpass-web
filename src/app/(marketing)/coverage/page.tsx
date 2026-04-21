@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   title: "Coverage",
   description:
     "What's covered by a Fixpass membership — and what's specifically not. Clear guardrails keep quality high.",
+  alternates: { canonical: "https://www.getfixpass.com/coverage" },
+  openGraph: {
+    title: "Coverage — Fixpass",
+    description: "Exactly what's covered and what's out of scope. Published in writing.",
+    images: [
+      "/api/og?title=What%27s%20covered%2C%20what%27s%20not.&eyebrow=Fixpass%20%E2%80%94%20Coverage",
+    ],
+  },
 };
 
 export default function CoveragePage() {

@@ -4,6 +4,8 @@ import { Reveal } from "@/components/ui/reveal";
 export const metadata: Metadata = {
   title: "Privacy",
   description: "How Fixpass collects, uses, and protects the personal data you share with us.",
+  alternates: { canonical: "https://www.getfixpass.com/privacy" },
+  robots: { index: true, follow: true },
 };
 
 export default function PrivacyPage() {

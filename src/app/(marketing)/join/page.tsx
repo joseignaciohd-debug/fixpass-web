@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   title: "Join Fixpass",
   description:
     "Start a Fixpass membership in Katy, TX. Tell us about your home and we'll confirm the right plan.",
+  alternates: { canonical: "https://www.getfixpass.com/join" },
+  openGraph: {
+    title: "Join Fixpass",
+    description: "Start a membership. Tell us about your home, we'll confirm fit.",
+    images: [
+      "/api/og?title=Tell%20us%20about%20your%20home.&eyebrow=Fixpass%20%E2%80%94%20Join&subtitle=We%27ll%20confirm%20fit%20and%20get%20you%20scheduled.",
+    ],
+  },
 };
 
 const steps = [

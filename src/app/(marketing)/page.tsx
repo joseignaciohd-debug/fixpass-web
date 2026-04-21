@@ -20,6 +20,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { Timeline, TimelineStep } from "@/components/ui/timeline";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
 import { TrustBadges } from "@/components/marketing/trust-badges";
+import { JsonLd, faqPageLd, localBusinessLd, organizationLd } from "@/lib/seo/jsonld";
 import {
   defaultRules,
   excludedServices,
@@ -72,6 +73,9 @@ const steps = [
 export default function HomePage() {
   return (
     <main className="overflow-hidden">
+      {/* SEO — Organization + LocalBusiness + FAQPage help Google render
+          rich snippets (stars, hours, service area, FAQ accordion). */}
+      <JsonLd data={[organizationLd, localBusinessLd, faqPageLd(faqs.slice(0, 6))]} />
       {/* ------------------------------------------------ */}
       {/* HERO                                               */}
       {/* ------------------------------------------------ */}

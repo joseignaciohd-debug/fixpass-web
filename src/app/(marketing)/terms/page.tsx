@@ -4,6 +4,8 @@ import { Reveal } from "@/components/ui/reveal";
 export const metadata: Metadata = {
   title: "Terms",
   description: "The contract between you and Fixpass when you join a membership.",
+  alternates: { canonical: "https://www.getfixpass.com/terms" },
+  robots: { index: true, follow: true },
 };
 
 export default function TermsPage() {

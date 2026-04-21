@@ -70,6 +70,7 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   robots: { index: true, follow: true },
+  alternates: { canonical: "https://www.getfixpass.com" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -8,6 +8,12 @@ import { Reveal } from "@/components/ui/reveal";
 export const metadata: Metadata = {
   title: "Support",
   description: "Reach the Fixpass team for membership, scheduling, billing, or quote questions.",
+  alternates: { canonical: "https://www.getfixpass.com/support" },
+  openGraph: {
+    title: "Support — Fixpass",
+    description: "Every channel reaches the same operator team — there's no phone-tree maze.",
+    images: ["/api/og?title=We%27re%20here.&eyebrow=Fixpass%20%E2%80%94%20Support"],
+  },
 };
 
 const channels = [

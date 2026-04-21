@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   title: "How it works",
   description:
     "From signup to handled. Three steps: pick a plan, request work, Fixpass shows up.",
+  alternates: { canonical: "https://www.getfixpass.com/how-it-works" },
+  openGraph: {
+    title: "How Fixpass works",
+    description: "Three steps, no phone tag — pick a plan, submit a request, a vetted tech shows up.",
+    images: [
+      "/api/og?title=Three%20steps%2C%20no%20phone%20tag.&eyebrow=Fixpass%20%E2%80%94%20How%20it%20works",
+    ],
+  },
 };
 
 const detailedSteps = [

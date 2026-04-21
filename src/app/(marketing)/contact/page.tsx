@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "Talk to Fixpass — operator-led home maintenance for Katy, TX. Questions, quotes, partnerships.",
+  alternates: { canonical: "https://www.getfixpass.com/contact" },
+  openGraph: {
+    title: "Contact Fixpass",
+    description: "Questions, quotes, or partnerships? An operator responds inside 24 hours.",
+    images: ["/api/og?title=Let%27s%20talk.&eyebrow=Fixpass%20%E2%80%94%20Contact"],
+  },
 };
 
 export default function ContactPage() {

@@ -8,6 +8,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
 import { CostCalculator } from "@/components/marketing/cost-calculator";
 import { TrustBadges } from "@/components/marketing/trust-badges";
+import { JsonLd, planServiceLd } from "@/lib/seo/jsonld";
 import { plans } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
 
@@ -15,6 +16,14 @@ export const metadata: Metadata = {
   title: "Plans",
   description:
     "Fixpass memberships — Silver, Gold, Platinum. Covered visits, clear labor caps, Stripe billing.",
+  alternates: { canonical: "https://www.getfixpass.com/plans" },
+  openGraph: {
+    title: "Plans — Fixpass",
+    description: "Silver, Gold, Platinum. Pick the membership that fits your home.",
+    images: [
+      "/api/og?title=Pick%20the%20membership%20that%20fits%20your%20home.&eyebrow=Fixpass%20%E2%80%94%20Plans&subtitle=Silver%20%E2%80%A2%20Gold%20%E2%80%A2%20Platinum.%20Stripe-billed%20monthly%20or%20annually.",
+    ],
+  },
 };
 
 // Compare-table rows — each tuple is (label, silver, gold, platinum).
@@ -33,6 +42,7 @@ const comparisonRows: Array<{ label: string; values: [string | boolean, string |
 export default function PlansPage() {
   return (
     <main className="relative">
+      <JsonLd data={plans.map((p) => planServiceLd(p))} />
       {/* HERO */}
       <section className="mx-auto max-w-7xl px-5 pb-10 pt-16 sm:px-8 lg:px-12 lg:pt-24">
         <Reveal className="max-w-3xl">
