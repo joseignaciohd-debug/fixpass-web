@@ -4,6 +4,8 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { notifyOpsOfLead } from "@/lib/email/resend";
+import { rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -15,6 +17,13 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Rate limit by IP — 5 submissions per 10 minutes. Blocks dumb bots.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+  const limited = rateLimit(`contact:${ip}`, { max: 5, windowMs: 10 * 60 * 1000 });
+  if (!limited.ok) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -27,10 +36,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Validation failed.", issues: parsed.error.flatten() }, { status: 400 });
   }
 
-  // TODO: integrate email provider here (Resend / Postmark / SES).
-  // For now the lead is logged — structured so log aggregators can
-  // alert on it. Sentry also captures structured logs via breadcrumb.
-  console.log("[contact] lead received", parsed.data);
+  // Email the ops inbox. If RESEND_API_KEY isn't set, the helper logs
+  // the lead and returns ok:true so the user's form still succeeds.
+  const email = await notifyOpsOfLead({ ...parsed.data, source: "contact" });
+  if (!email.ok) {
+    console.error("[contact] email send failed", email.error);
+    // Still return ok — we logged the lead; ops will triage via Sentry.
+  }
 
   return NextResponse.json({ ok: true });
 }

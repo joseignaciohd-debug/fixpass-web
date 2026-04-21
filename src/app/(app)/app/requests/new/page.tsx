@@ -1,9 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { NewRequestForm } from "@/components/forms/new-request-form";
+import { getCurrentSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-export default function NewRequestPage() {
+export default async function NewRequestPage() {
+  // Layout already gates on session; re-reading here gives us the auth
+  // user id needed to namespace photo uploads in Storage.
+  const session = (await getCurrentSession())!;
+
   return (
     <div className="space-y-6">
       <Card animate={false}>
@@ -16,7 +21,7 @@ export default function NewRequestPage() {
       </Card>
 
       <Card>
-        <NewRequestForm />
+        <NewRequestForm userId={session.userId} />
       </Card>
     </div>
   );

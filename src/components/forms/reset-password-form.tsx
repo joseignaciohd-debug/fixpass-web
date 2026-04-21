@@ -37,8 +37,13 @@ export function ResetPasswordForm() {
     try {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+        // Land on /reset-password/confirm where the user types the new
+        // password. Supabase attaches the recovery token to the URL
+        // hash and the confirm form's useEffect detects the session.
         redirectTo:
-          typeof window !== "undefined" ? `${window.location.origin}/sign-in` : undefined,
+          typeof window !== "undefined"
+            ? `${window.location.origin}/reset-password/confirm`
+            : undefined,
       });
       if (error) {
         setBanner(error.message || "Could not send reset email.");

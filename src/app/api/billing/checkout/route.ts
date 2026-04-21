@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     allow_promotion_codes: true,
-    success_url: `${origin}/app/membership?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${origin}/app/welcome?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/app/subscribe?checkout=cancelled`,
     // client_reference_id lets the webhook write a payment_events row
     // so the app can unlock immediately via Supabase Realtime.

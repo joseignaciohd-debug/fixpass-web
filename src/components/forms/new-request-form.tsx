@@ -2,15 +2,19 @@
 
 // NewRequestForm — mirrors the mobile requests intake. Zod-validated
 // client-side, submitted via server action which writes to Supabase.
+// Photos upload directly to Supabase Storage; only their paths ride
+// the server-action payload (keeps the action fast + under any body
+// size limits).
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, ImagePlus } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { PhotoUpload } from "@/components/forms/photo-upload";
 import { createServiceRequest } from "@/app/(app)/app/requests/actions";
 
 const schema = z.object({
@@ -25,11 +29,12 @@ type FormValues = z.infer<typeof schema>;
 
 const quickCategories = ["Drywall patch", "Door adjust", "Caulk touch-up", "Shelves or decor"];
 
-export function NewRequestForm() {
+export function NewRequestForm({ userId }: { userId: string }) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [banner, setBanner] = useState<string | null>(null);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [photoPaths, setPhotoPaths] = useState<string[]>([]);
 
   const {
     register,
@@ -45,7 +50,7 @@ export function NewRequestForm() {
     setState("loading");
     setBanner(null);
     try {
-      const res = await createServiceRequest(values);
+      const res = await createServiceRequest({ ...values, photoPaths });
       if (res?.error) {
         setBanner(res.error);
         setState("error");
@@ -125,13 +130,9 @@ export function NewRequestForm() {
         />
       </label>
 
-      {/* Photo upload placeholder — real picker lives in mobile. */}
-      <div className="flex items-start gap-3 rounded-2xl border border-dashed border-border-strong bg-canvas-elevated p-5 text-sm text-ink-muted">
-        <ImagePlus className="mt-0.5 h-5 w-5 shrink-0 text-sky" aria-hidden />
-        <span>
-          Add photos from the Fixpass mobile app — they&apos;ll attach to this request automatically.
-          Web photo upload is coming soon.
-        </span>
+      <div className="grid gap-2">
+        <p className="text-sm font-medium text-ink">Attach photos (optional)</p>
+        <PhotoUpload userId={userId} onChange={setPhotoPaths} />
       </div>
 
       <Button type="submit" loading={state === "loading"} className="w-full sm:w-auto">
