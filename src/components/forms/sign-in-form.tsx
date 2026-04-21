@@ -13,7 +13,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { identifyUser } from "@/lib/analytics/posthog";
+import { Funnel, identifyUser, track } from "@/lib/analytics/posthog";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const schema = z.object({
@@ -48,6 +48,7 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
   async function onSubmit(values: FormValues) {
     setLoading(true);
     setBanner(null);
+    track(Funnel.SignInSubmitted);
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -57,11 +58,13 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
 
       if (error) {
         setBanner(error.message || "Sign-in failed.");
+        track(Funnel.SignInFailed, { reason: error.message });
         return;
       }
 
       // Identify for PostHog before redirect.
       if (data.user?.id) identifyUser(data.user.id, { email: values.email });
+      track(Funnel.SignInSucceeded);
 
       // Role-aware redirect: let the server decide via /app landing.
       const target = nextPath && nextPath.startsWith("/") ? nextPath : "/app";

@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Funnel, identifyUser, track } from "@/lib/analytics/posthog";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const schema = z.object({
@@ -43,6 +44,7 @@ export function JoinForm() {
   async function onSubmit(values: FormValues) {
     setState("loading");
     setBanner(null);
+    track(Funnel.JoinSignUpStarted, { city: values.city || null });
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase.auth.signUp({
@@ -65,8 +67,12 @@ export function JoinForm() {
       if (error) {
         setBanner(error.message || "Could not create account.");
         setState("error");
+        track(Funnel.JoinSignUpFailed, { reason: error.message });
         return;
       }
+
+      track(Funnel.JoinSignUpSucceeded);
+      if (data.user?.id) identifyUser(data.user.id, { email: values.email });
 
       // If email confirmation is required (recommended in prod), session is null
       // and we surface a confirmation banner. If confirmation is off, we redirect.

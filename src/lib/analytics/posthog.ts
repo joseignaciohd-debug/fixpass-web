@@ -44,4 +44,27 @@ export function track(event: string, properties?: Record<string, unknown>) {
   posthog.capture(event, properties);
 }
 
+// Canonical funnel-event names. Using constants + a type union means
+// typos show up at compile time + the funnel dashboard stays clean.
+export const Funnel = {
+  // Marketing
+  ContactSubmitted: "contact_submitted",
+  JoinSignUpStarted: "join_signup_started",
+  JoinSignUpFailed: "join_signup_failed",
+  JoinSignUpSucceeded: "join_signup_succeeded",
+  // Auth
+  SignInSubmitted: "sign_in_submitted",
+  SignInSucceeded: "sign_in_succeeded",
+  SignInFailed: "sign_in_failed",
+  // Billing
+  PlanSelected: "plan_selected",
+  CheckoutRedirected: "checkout_redirected",
+  SubscriptionActive: "subscription_active",
+  // In-app
+  RequestSubmitted: "request_submitted",
+  PropertySaved: "property_saved",
+} as const;
+
+export type FunnelEvent = (typeof Funnel)[keyof typeof Funnel];
+
 export const isAnalyticsEnabled = ENABLED;
