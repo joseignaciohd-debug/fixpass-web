@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { Reveal } from "@/components/ui/reveal";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
+import { CostCalculator } from "@/components/marketing/cost-calculator";
+import { TrustBadges } from "@/components/marketing/trust-badges";
 import { plans } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
 
@@ -132,6 +134,24 @@ export default function PlansPage() {
             );
           })}
         </div>
+      </section>
+
+      {/* SAVINGS CALCULATOR */}
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12">
+        <Reveal>
+          <CostCalculator defaultPlan="gold" />
+        </Reveal>
+      </section>
+
+      {/* TRUST BADGES */}
+      <section className="mx-auto max-w-7xl px-5 pb-10 sm:px-8 lg:px-12">
+        <Reveal className="mb-8 max-w-xl">
+          <span className="eyebrow">What every tier includes</span>
+          <h2 className="display-section mt-3 text-3xl text-ink sm:text-4xl">
+            Same guardrails across plans.
+          </h2>
+        </Reveal>
+        <TrustBadges />
       </section>
 
       {/* COMPARE TABLE */}

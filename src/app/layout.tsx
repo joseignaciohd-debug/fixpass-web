@@ -47,11 +47,22 @@ export const metadata: Metadata = {
     siteName: "Fixpass",
     url: "https://www.getfixpass.com",
     locale: "en_US",
+    images: [
+      {
+        url: "/api/og?title=Home%20maintenance%2C%20handled.&eyebrow=Fixpass%20%E2%80%94%20Katy%2C%20TX&subtitle=Predictable%20Stripe%20billing%2C%20vetted%20technicians%2C%20operator-led%20scheduling.",
+        width: 1200,
+        height: 630,
+        alt: "Fixpass — Home maintenance, handled.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fixpass — Home maintenance, handled.",
     description: "Premium home-maintenance membership. Vetted pros. Stripe-secured billing.",
+    images: [
+      "/api/og?title=Home%20maintenance%2C%20handled.&eyebrow=Fixpass%20%E2%80%94%20Katy%2C%20TX",
+    ],
   },
   applicationName: "Fixpass",
   appleWebApp: {

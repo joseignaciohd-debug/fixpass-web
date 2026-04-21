@@ -79,27 +79,59 @@ export const defaultRules = [
 export const faqs = [
   {
     q: "What counts as a covered fix?",
-    a: "Small-to-medium handyman work completed in a single visit — fixture swaps, mounting, drywall patching, minor repairs. Up to 3 related tasks or one moderately-sized job per visit, within a 90-minute labor cap.",
+    a: "Small-to-medium handyman work completed in a single visit — fixture swaps, TV mounting, drywall patching, door adjustments, minor repairs. Up to 3 related tasks or one moderately sized job per visit, within a 90-minute labor cap.",
+  },
+  {
+    q: "What's NOT covered?",
+    a: "Anything that requires a licensed trade (new electrical circuits, plumbing re-pipes, water heater installs), major remodels, rough-framing, roofing, foundation work, tree removal, HVAC refrigerant work, or appliance repair under manufacturer warranty. We'll quote those separately with your member discount or refer a partner.",
   },
   {
     q: "Are materials included?",
-    a: "Platinum includes $40 / month materials allowance. Silver and Gold pass through materials at cost or quote them separately.",
+    a: "Platinum includes a $40 / month materials allowance. Silver and Gold pass materials through at cost, or we quote materials separately with your member discount applied. Member discount is 5–15% depending on tier.",
   },
   {
     q: "How fast can someone come out?",
-    a: "Most requests are scheduled within 1–3 business days depending on your plan tier. Operators triage every request and confirm the window with you.",
+    a: "Most requests are scheduled within 1–3 business days depending on plan tier. Gold + Platinum get priority dispatch. We triage every request inside 24 hours and confirm the window with you before a tech is dispatched.",
+  },
+  {
+    q: "What if nobody's home?",
+    a: "Tell us access arrangements in your request (gate code, lockbox, garage code, or \"I'll be home\"). Most members leave a specific access note on their property profile so they don't have to repeat it every time. If the tech arrives and can't access the home, the visit counts and we'll reschedule.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes — Fixpass is month-to-month. Cancel before your next billing cycle and your membership ends at the next renewal.",
+    a: "Yes — Fixpass is month-to-month. Cancel before your next billing cycle from the billing portal and your membership continues to the end of the current paid period, then stops. No cancellation fees. Annual subscribers get a prorated refund if you cancel within the first 30 days.",
   },
   {
-    q: "What if I need a bigger project?",
-    a: "We'll quote it separately with your member discount (5–15% off depending on tier). For trades that require a license, we may refer you to a partner and help coordinate.",
+    q: "What if Fixpass messes up my home?",
+    a: "All technicians carry liability insurance through Fixpass. If a covered visit causes damage, file a claim to hello@getfixpass.com within 7 days of the visit and we'll route it through our insurer. We've also got a 30-day workmanship warranty — if something we fixed breaks again for the same reason, we come back inside your covered-visit envelope at no extra charge.",
+  },
+  {
+    q: "Do you do emergency calls?",
+    a: "No. If you have a gas leak, active flooding, or an electrical hazard, call 911 or your utility's emergency line. Fixpass operates on a scheduled, triaged model — that's the trade-off for predictable pricing and vetted technicians.",
+  },
+  {
+    q: "Can I have Fixpass at more than one property?",
+    a: "Each membership covers one registered property. If you own multiple homes (second home, rental, parents' place), each one needs its own membership. Bundle pricing is in the works — email hello@getfixpass.com if you have 2+ and want to discuss.",
+  },
+  {
+    q: "How do pets + kids fit in?",
+    a: "No issue — just flag them in your access notes so technicians aren't surprised. We ask techs to wear shoe covers in homes with kids or allergies, and we schedule around nap windows when requested.",
+  },
+  {
+    q: "What's the typical cost vs hiring directly?",
+    a: "A single handyman call-out in Katy runs $95–$140/hr with a 1-hour minimum, so a typical visit costs $125–$200. Gold at $49.99/mo covers 5 visits, which penciled against paying directly saves members $500–$1,500/year depending on usage.",
   },
   {
     q: "Which areas are covered?",
-    a: "Fixpass is currently serving Katy, TX. New service areas get added as we add operators to support them.",
+    a: "Fixpass is currently serving Katy, TX and nearby zip codes. Expanding to Cypress, Richmond, and Fulshear next. If you're just outside our footprint and want to join a waitlist, email hello@getfixpass.com.",
+  },
+  {
+    q: "Is Fixpass a handyman marketplace?",
+    a: "No — the opposite. We don't list third-party handymen or let strangers bid on your home. Fixpass employs or directly contracts a small, vetted bench of technicians. Every request goes through an operator-reviewed triage before dispatch. It's slower than a marketplace but reliably the same quality.",
+  },
+  {
+    q: "How is billing handled?",
+    a: "End-to-end on Stripe. Card numbers never touch Fixpass — we just see the token. You can update cards, cancel, download invoices, or switch billing cycles from the Stripe-powered billing portal linked in your account.",
   },
 ];
 

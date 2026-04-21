@@ -19,6 +19,7 @@ import { IconTile } from "@/components/ui/icon-tile";
 import { Reveal } from "@/components/ui/reveal";
 import { Timeline, TimelineStep } from "@/components/ui/timeline";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
+import { TrustBadges } from "@/components/marketing/trust-badges";
 import {
   defaultRules,
   excludedServices,
@@ -473,6 +474,21 @@ export default function HomePage() {
               </div>
             </div>
           </Card>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------ */}
+      {/* TRUST ROW                                          */}
+      {/* ------------------------------------------------ */}
+      <section className="relative">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12">
+          <Reveal className="mb-10 max-w-xl">
+            <span className="eyebrow">Why members trust us</span>
+            <h2 className="display-section mt-3 text-3xl text-ink sm:text-4xl">
+              Guardrails in writing, not in marketing.
+            </h2>
+          </Reveal>
+          <TrustBadges />
         </div>
       </section>
 
