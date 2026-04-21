@@ -1,7 +1,9 @@
 import { Inbox as InboxIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Timeline, TimelineStep } from "@/components/ui/timeline";
+import { MarkAllReadButton } from "@/components/inbox/mark-all-read-button";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
@@ -34,6 +36,7 @@ export default async function InboxPage() {
     (k) => groups[k].length > 0,
   );
   const unread = snapshot.notifications.filter((n) => !n.isRead).length;
+  const unreadIds = snapshot.notifications.filter((n) => !n.isRead).map((n) => n.id);
 
   return (
     <div className="space-y-6">
@@ -47,28 +50,21 @@ export default async function InboxPage() {
               attention.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {unread > 0 ? <Badge tone="royal">{unread} unread</Badge> : null}
             <Badge tone="default">{snapshot.notifications.length} total</Badge>
+            <MarkAllReadButton unreadIds={unreadIds} />
           </div>
         </div>
       </Card>
 
       {orderedBuckets.length === 0 ? (
-        <Card>
-          <div className="flex flex-col items-center justify-center gap-3 text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-soft text-sky-ink">
-              <InboxIcon className="h-5 w-5" aria-hidden />
-            </div>
-            <p className="font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
-              Inbox zero.
-            </p>
-            <p className="max-w-sm text-sm text-ink-muted">
-              Scheduling confirmations and service notes will appear here as soon as your requests move
-              forward.
-            </p>
-          </div>
-        </Card>
+        <EmptyState
+          icon={InboxIcon}
+          tone="sky"
+          title="Inbox zero."
+          description="Scheduling confirmations and service notes will appear here as soon as your requests move forward."
+        />
       ) : (
         orderedBuckets.map((bucket) => (
           <Card key={bucket}>

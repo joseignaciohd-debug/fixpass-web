@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getCurrentSession } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
 
 const PRICE_MAP: Record<string, Record<string, string | undefined>> = {
   silver: {
@@ -25,6 +26,17 @@ const PRICE_MAP: Record<string, Record<string, string | undefined>> = {
 export async function POST(request: Request) {
   const session = await getCurrentSession();
   if (!session) return NextResponse.redirect(new URL("/sign-in", request.url), { status: 303 });
+
+  // 10 checkout attempts per user per hour — more than enough for legit
+  // users, blocks abuse. Keyed on user id so shared-IP office networks
+  // don't hit each other's limits.
+  const rl = rateLimit(`checkout:${session.userId}`, { max: 10, windowMs: 60 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many checkout attempts. Wait a moment and try again." },
+      { status: 429 },
+    );
+  }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {

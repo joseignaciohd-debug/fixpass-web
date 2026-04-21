@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Your name, please.").max(120),
@@ -23,6 +24,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function ContactForm() {
+  const toast = useToast();
   const [state, setState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [banner, setBanner] = useState<string | null>(null);
 
@@ -48,10 +50,12 @@ export function ContactForm() {
       if (!res.ok) throw new Error("Request failed");
       setState("success");
       setBanner("Thanks — we'll follow up inside 24 hours.");
+      toast.show("Request received — ops will reply shortly.", "success");
       reset();
     } catch {
       setState("error");
       setBanner("Could not submit. Email hello@getfixpass.com directly and we'll reply quickly.");
+      toast.show("Submission failed. Try again or email us.", "error");
     }
   }
 
