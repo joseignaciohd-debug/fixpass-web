@@ -10,9 +10,8 @@ import {
   Star,
   Wrench,
 } from "lucide-react";
+import { BlueprintHero } from "@/components/ui/blueprint-hero";
 import { Badge } from "@/components/ui/badge";
-import { BalancedHeading } from "@/components/ui/balanced-heading";
-import { BlindsReveal } from "@/components/ui/blinds-reveal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
@@ -20,7 +19,6 @@ import { IconTile } from "@/components/ui/icon-tile";
 import { Reveal } from "@/components/ui/reveal";
 import { Timeline, TimelineStep } from "@/components/ui/timeline";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
-import { DoorHandleCard } from "@/components/marketing/door-handle-card";
 import { HammerScrollShowcase } from "@/components/marketing/hammer-scroll-showcase";
 import { TrustBadges } from "@/components/marketing/trust-badges";
 import { JsonLd, faqPageLd, localBusinessLd, organizationLd } from "@/lib/seo/jsonld";
@@ -75,70 +73,17 @@ export default function HomePage() {
           rich snippets (stars, hours, service area, FAQ accordion). */}
       <JsonLd data={[organizationLd, localBusinessLd, faqPageLd(faqs.slice(0, 6))]} />
       {/* ------------------------------------------------ */}
-      {/* HERO                                               */}
+      {/* HERO — full-viewport blueprint drafts itself in.   */}
+      {/*        Sky-blue architectural linework on navy,    */}
+      {/*        editorial headline floating over the plan.  */}
       {/* ------------------------------------------------ */}
-      <section className="relative">
-        <div className="mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-8 lg:px-12 lg:pb-24 lg:pt-20">
-          <div className="grid gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-            <Reveal>
-              <Badge tone="emerald" icon={<span className="h-1.5 w-1.5 rounded-full bg-emerald" />}>
-                Now serving Katy, Texas
-              </Badge>
-              <BalancedHeading
-                as="h1"
-                className="display-hero mt-6 text-[3.25rem] text-ink sm:text-[4rem] lg:text-[4.75rem]"
-              >
-                {/* Two staggered blinds reveals — the second has a longer
-                    delay so "handled." arrives after "Home maintenance,"
-                    is already on screen. The rhythm matches a spoken
-                    line-break, not a mechanical simultaneous fade. */}
-                <BlindsReveal slats={5} delay={0.1}>
-                  Home maintenance,
-                </BlindsReveal>
-                <span className="block text-royal">
-                  <BlindsReveal slats={5} delay={0.45}>
-                    handled.
-                  </BlindsReveal>
-                </span>
-              </BalancedHeading>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-ink-muted">
-                Fixpass turns scattered home-repair calls into a premium membership.
-                Predictable pricing, trusted technicians, and a calmer way to keep
-                the house running.
-              </p>
-
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button href="/join" size="lg" iconRight={<ArrowRight size={18} />}>
-                  Start your membership
-                </Button>
-                <Button href="/plans" variant="secondary" size="lg">
-                  View plans
-                </Button>
-              </div>
-
-              <dl className="mt-12 grid max-w-xl grid-cols-3 gap-6 border-t border-border pt-8">
-                <HeroStat label="Response" value="<24h" />
-                <HeroStat label="On-site" value="1–3 days" />
-                <HeroStat label="Billing" value="Stripe" />
-              </dl>
-            </Reveal>
-
-            <Reveal direction="up" delay={0.12}>
-              <div className="relative">
-                {/* Signature hero interaction — user turns a brass handle
-                    to "open" the Fixpass promise. Falls back to a static
-                    opened card when prefers-reduced-motion is set. */}
-                <DoorHandleCard />
-
-                <div className="absolute -bottom-6 left-8 hidden items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-ink shadow-[0_18px_45px_-24px_rgb(var(--shadow)/0.3)] md:inline-flex">
-                  <FixpassMark size={20} />
-                  {FIXPASS_TAGLINE}
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
+      <BlueprintHero
+        trustBadge={{ text: "Now serving Katy, Texas", dotTone: "emerald" }}
+        headline={{ line1: "Home maintenance,", line2: "handled." }}
+        subtitle="A premium membership for the small repairs families keep putting off. Trusted technicians, operator-reviewed requests, and a calmer way to keep the house running."
+        primaryCta={{ label: "Start your membership", href: "/join" }}
+        secondaryCta={{ label: "View plans", href: "/plans" }}
+      />
 
       {/* ------------------------------------------------ */}
       {/* BRAND PILLARS                                      */}
@@ -612,16 +557,5 @@ export default function HomePage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function HeroStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">{label}</dt>
-      <dd className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold text-ink">
-        {value}
-      </dd>
-    </div>
   );
 }
