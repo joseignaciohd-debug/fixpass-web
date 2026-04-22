@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { ArrowRight, Check, CreditCard, Minus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { BalancedHeading } from "@/components/ui/balanced-heading";
+import { BlindsReveal } from "@/components/ui/blinds-reveal";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { Reveal } from "@/components/ui/reveal";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
 import { CostCalculator } from "@/components/marketing/cost-calculator";
+import { PlanCards } from "@/components/marketing/plan-cards";
+import { StickyPlansCTA } from "@/components/marketing/sticky-plans-cta";
 import { TrustBadges } from "@/components/marketing/trust-badges";
 import { JsonLd, planServiceLd } from "@/lib/seo/jsonld";
 import { plans } from "@/lib/config/site-data";
-import { currency } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Plans",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     title: "Plans — Fixpass",
     description: "Silver, Gold, Platinum. Pick the membership that fits your home.",
     images: [
-      "/api/og?title=Pick%20the%20membership%20that%20fits%20your%20home.&eyebrow=Fixpass%20%E2%80%94%20Plans&subtitle=Silver%20%E2%80%A2%20Gold%20%E2%80%A2%20Platinum.%20Stripe-billed%20monthly%20or%20annually.",
+      "/api/og?title=Pick%20the%20membership%20that%20fits%20your%20home.&eyebrow=Fixpass%20%E2%80%94%20Plans&subtitle=Silver%20%E2%80%A2%20Gold%20%E2%80%A2%20Platinum.%20Prepay%203%2C%206%2C%20or%2012%20months%20via%20Stripe.",
     ],
   },
 };
@@ -47,106 +48,33 @@ export default function PlansPage() {
       <section className="mx-auto max-w-7xl px-5 pb-10 pt-16 sm:px-8 lg:px-12 lg:pt-24">
         <Reveal className="max-w-3xl">
           <span className="eyebrow">Memberships</span>
-          <h1 className="display-hero mt-4 text-5xl text-ink sm:text-6xl lg:text-[4.5rem]">
-            Pick the membership that fits your home.
-          </h1>
+          <BalancedHeading
+            as="h1"
+            className="display-hero mt-4 text-5xl text-ink sm:text-6xl lg:text-[4.5rem]"
+          >
+            <BlindsReveal slats={6} delay={0.05}>
+              Pick the membership that fits your home.
+            </BlindsReveal>
+          </BalancedHeading>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-ink-muted">
             Every plan supports one registered property, defined visit allowances, a clear labor cap, and
             an out-of-scope quote path when a request falls outside coverage.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">
             <CreditCard size={14} />
-            Billed monthly or annually via Stripe
+            Prepay 3, 6, or 12 months via Stripe
           </div>
         </Reveal>
       </section>
 
-      {/* PLAN CARDS */}
-      <section className="mx-auto max-w-7xl px-5 pb-12 sm:px-8 lg:px-12">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {plans.map((plan, i) => {
-            const isPlatinum = plan.id === "platinum";
-            const isGold = plan.id === "gold";
-            return (
-              <Card
-                key={plan.id}
-                variant={isPlatinum ? "dark" : isGold ? "ivory" : "default"}
-                className={isGold ? "ring-1 ring-emerald/30" : ""}
-                delay={0.06 * i}
-              >
-                {plan.featured ? (
-                  <div className="mb-4">
-                    <Badge tone={isPlatinum ? "inverse" : "honey"}>{plan.featured}</Badge>
-                  </div>
-                ) : null}
-
-                <h2
-                  className={`font-[family-name:var(--font-display)] text-3xl font-semibold ${
-                    isPlatinum ? "text-white" : "text-ink"
-                  }`}
-                >
-                  {plan.name}
-                </h2>
-                <p
-                  className={`mt-2 max-w-xs text-sm leading-6 ${
-                    isPlatinum ? "text-white/70" : "text-ink-muted"
-                  }`}
-                >
-                  {plan.tagline}
-                </p>
-
-                <div className="mt-7 flex items-baseline gap-2">
-                  <span
-                    className={`font-[family-name:var(--font-display)] text-5xl font-semibold tracking-tight ${
-                      isPlatinum ? "text-white" : "text-ink"
-                    }`}
-                  >
-                    {currency(plan.monthlyPrice)}
-                  </span>
-                  <span
-                    className={`text-sm ${isPlatinum ? "text-white/60" : "text-ink-muted"}`}
-                  >
-                    / month
-                  </span>
-                </div>
-                <p className={`mt-1 text-sm ${isPlatinum ? "text-white/60" : "text-ink-muted"}`}>
-                  or {currency(plan.annualPrice)} billed annually
-                </p>
-
-                <ul
-                  className={`mt-8 space-y-3 text-sm ${
-                    isPlatinum ? "text-white/85" : "text-ink-muted"
-                  }`}
-                >
-                  <PlanLi highlight={isPlatinum}>
-                    {typeof plan.includedVisits === "number"
-                      ? `${plan.includedVisits} covered visits / month`
-                      : plan.includedVisits}
-                  </PlanLi>
-                  <PlanLi highlight={isPlatinum}>{plan.priority} scheduling priority</PlanLi>
-                  <PlanLi highlight={isPlatinum}>
-                    {plan.maxLaborMinutes} labor minutes per visit
-                  </PlanLi>
-                  <PlanLi highlight={isPlatinum}>
-                    {plan.materialsAllowance ? `${currency(plan.materialsAllowance)} / mo materials` : "Materials pass-through"}
-                  </PlanLi>
-                  <PlanLi highlight={isPlatinum}>{plan.outOfScopeDiscount}% off quoted work</PlanLi>
-                </ul>
-
-                <Button
-                  href="/join"
-                  variant={isPlatinum ? "inverse" : "primary"}
-                  className="mt-9 w-full"
-                >
-                  Choose {plan.name}
-                </Button>
-              </Card>
-            );
-          })}
-        </div>
+      {/* PLAN CARDS — interactive cycle toggle lives inside PlanCards */}
+      <section id="plan-cards" className="mx-auto max-w-7xl px-5 pb-12 sm:px-8 lg:px-12 scroll-mt-24">
+        <PlanCards ctaHref="/join" />
       </section>
 
-      {/* SAVINGS CALCULATOR */}
+      {/* SAVINGS CALCULATOR — sits right after cards so the "is this
+          worth it?" question gets answered before users dig into
+          comparison details. */}
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12">
         <Reveal>
           <CostCalculator defaultPlan="gold" />
@@ -164,7 +92,8 @@ export default function PlansPage() {
         <TrustBadges />
       </section>
 
-      {/* COMPARE TABLE */}
+      {/* COMPARE TABLE — line-item breakdown lives below the calculator
+          since it's for the handful of users who need every detail. */}
       <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-12">
         <Reveal className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
@@ -251,7 +180,7 @@ export default function PlansPage() {
             </div>
 
             <div className="rounded-3xl border border-white/15 bg-white/[0.07] p-6 backdrop-blur">
-              <FixpassMark size={48} color="currentColor" strokeWidth={6} />
+              <FixpassMark size={48} onDark />
               <p className="mt-5 font-[family-name:var(--font-display)] text-xl font-semibold leading-snug text-white">
                 &ldquo;Better to have it and not need it, than to need it and not have it.&rdquo;
               </p>
@@ -262,15 +191,11 @@ export default function PlansPage() {
           </div>
         </GradientCard>
       </section>
+
+      {/* Mobile sticky CTA — anchored to #plan-cards so tapping scrolls
+          back up to the interactive matrix. Desktop unaffected. */}
+      <StickyPlansCTA />
     </main>
   );
 }
 
-function PlanLi({ children, highlight }: { children: React.ReactNode; highlight: boolean }) {
-  return (
-    <li className="flex items-start gap-2">
-      <Check size={16} className={`mt-0.5 shrink-0 ${highlight ? "text-honey" : "text-emerald"}`} />
-      <span>{children}</span>
-    </li>
-  );
-}

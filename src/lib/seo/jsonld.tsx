@@ -65,14 +65,33 @@ export const localBusinessLd = {
   },
 };
 
-// One Service entry per plan. Google uses these for rich pricing
-// snippets under /plans queries.
+// One Service entry per plan. Each plan has three prepaid offers
+// (3mo / 6mo / 1yr); Google will typically surface the cheapest.
 export function planServiceLd(plan: {
   name: string;
-  monthlyPrice: number;
+  prices: { "3mo": number; "6mo": number; "1yr": number };
   includedVisits: string | number;
   tagline: string;
 }) {
+  const offers = [
+    { months: 3, price: plan.prices["3mo"] },
+    { months: 6, price: plan.prices["6mo"] },
+    { months: 12, price: plan.prices["1yr"] },
+  ].map((o) => ({
+    "@type": "Offer",
+    name: `${o.months}-month prepaid`,
+    price: o.price.toFixed(2),
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: o.price.toFixed(2),
+      priceCurrency: "USD",
+      billingDuration: `P${o.months}M`,
+      unitText: `${o.months}-month prepaid subscription`,
+    },
+    availability: "https://schema.org/InStock",
+  }));
+
   return {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -80,18 +99,7 @@ export function planServiceLd(plan: {
     description: plan.tagline,
     provider: { "@id": `${SITE_URL}#business` },
     areaServed: "Katy, TX",
-    offers: {
-      "@type": "Offer",
-      price: plan.monthlyPrice.toFixed(2),
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: plan.monthlyPrice.toFixed(2),
-        priceCurrency: "USD",
-        unitText: "monthly subscription",
-      },
-      availability: "https://schema.org/InStock",
-    },
+    offers,
     additionalProperty: [
       {
         "@type": "PropertyValue",

@@ -69,6 +69,22 @@ export const metadata: Metadata = {
     title: "Fixpass",
     statusBarStyle: "black-translucent",
   },
+  // Favicons — ship all common sizes explicitly so Google, Safari,
+  // Firefox, Chrome, and social-unfurl bots all get a crisp image
+  // without guessing. The ?v=3 cache-buster invalidates any pre-brand
+  // cache entries still living in the wild.
+  icons: {
+    icon: [
+      { url: "/favicon.ico?v=3", sizes: "any" },
+      { url: "/favicon-16x16.png?v=3", type: "image/png", sizes: "16x16" },
+      { url: "/favicon-32x32.png?v=3", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-48x48.png?v=3", type: "image/png", sizes: "48x48" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png?v=3", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: [{ url: "/favicon.ico?v=3" }],
+  },
   robots: { index: true, follow: true },
   alternates: { canonical: "https://www.getfixpass.com" },
 };

@@ -36,6 +36,7 @@ export function ContactForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { name: "", email: "", phone: "", city: "", address: "", message: "" },
+    mode: "onBlur",
   });
 
   async function onSubmit(values: FormValues) {

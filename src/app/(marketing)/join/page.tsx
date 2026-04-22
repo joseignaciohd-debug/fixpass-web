@@ -26,7 +26,16 @@ const steps = [
   { icon: CreditCard, title: "You activate via Stripe",   copy: "Pay securely, schedule your first visit inside your allowance.", tone: "royal" as const },
 ];
 
-export default function JoinPage() {
+export default async function JoinPage({
+  searchParams,
+}: {
+  // Next 15+ passes searchParams as a Promise.
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const plan = typeof params.plan === "string" ? params.plan : undefined;
+  const cycle = typeof params.cycle === "string" ? params.cycle : undefined;
+
   return (
     <main className="relative">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
@@ -74,7 +83,7 @@ export default function JoinPage() {
             </div>
 
             <Card variant="muted" animate={false} className="mt-10 flex items-start gap-4">
-              <FixpassMark size={36} color="rgb(var(--ink))" strokeWidth={7} />
+              <FixpassMark size={36} />
               <div>
                 <p className="font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
                   Already a member?
@@ -97,7 +106,7 @@ export default function JoinPage() {
             </div>
           </Reveal>
 
-          <JoinForm />
+          <JoinForm preselectPlan={plan} preselectCycle={cycle} />
         </div>
       </div>
     </main>

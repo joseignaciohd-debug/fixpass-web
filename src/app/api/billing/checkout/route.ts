@@ -8,20 +8,28 @@ import Stripe from "stripe";
 import { getCurrentSession } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 
+// Billing cycles: 3mo / 6mo / 1yr prepaid. Each tier has its own
+// Stripe price per cycle. Env var naming: STRIPE_PRICE_<TIER>_<CYCLE>
+// where CYCLE ∈ { 3MO, 6MO, 1YR }.
 const PRICE_MAP: Record<string, Record<string, string | undefined>> = {
   silver: {
-    monthly: process.env.STRIPE_PRICE_SILVER_MONTHLY,
-    annual: process.env.STRIPE_PRICE_SILVER_ANNUAL,
+    "3mo": process.env.STRIPE_PRICE_SILVER_3MO,
+    "6mo": process.env.STRIPE_PRICE_SILVER_6MO,
+    "1yr": process.env.STRIPE_PRICE_SILVER_1YR,
   },
   gold: {
-    monthly: process.env.STRIPE_PRICE_GOLD_MONTHLY,
-    annual: process.env.STRIPE_PRICE_GOLD_ANNUAL,
+    "3mo": process.env.STRIPE_PRICE_GOLD_3MO,
+    "6mo": process.env.STRIPE_PRICE_GOLD_6MO,
+    "1yr": process.env.STRIPE_PRICE_GOLD_1YR,
   },
   platinum: {
-    monthly: process.env.STRIPE_PRICE_PLATINUM_MONTHLY,
-    annual: process.env.STRIPE_PRICE_PLATINUM_ANNUAL,
+    "3mo": process.env.STRIPE_PRICE_PLATINUM_3MO,
+    "6mo": process.env.STRIPE_PRICE_PLATINUM_6MO,
+    "1yr": process.env.STRIPE_PRICE_PLATINUM_1YR,
   },
 };
+
+const VALID_CYCLES = new Set(["3mo", "6mo", "1yr"]);
 
 export async function POST(request: Request) {
   const session = await getCurrentSession();
@@ -48,7 +56,10 @@ export async function POST(request: Request) {
 
   const form = await request.formData();
   const planId = String(form.get("planId") ?? "");
-  const billingCycle = String(form.get("billingCycle") ?? "monthly");
+  const billingCycle = String(form.get("billingCycle") ?? "1yr");
+  if (!VALID_CYCLES.has(billingCycle)) {
+    return NextResponse.json({ error: "Unknown billing cycle." }, { status: 400 });
+  }
   const priceId = PRICE_MAP[planId]?.[billingCycle];
   if (!priceId) {
     return NextResponse.json({ error: "Unknown plan / cycle." }, { status: 400 });

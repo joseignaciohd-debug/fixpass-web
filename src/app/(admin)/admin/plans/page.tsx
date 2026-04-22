@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { plans } from "@/lib/config/site-data";
+import { billingCycles, plans, planPrice } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +19,13 @@ export default function AdminPlansPage() {
                 {p.maxLaborMinutes}-minute cap
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge tone="emerald">active</Badge>
-              <Badge tone="honey">{currency(p.monthlyPrice)} / month</Badge>
+              {billingCycles.map((c) => (
+                <Badge key={c.id} tone="honey">
+                  {c.short}: {currency(planPrice(p, c.id))}
+                </Badge>
+              ))}
             </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-ink-muted">{p.tagline}</p>

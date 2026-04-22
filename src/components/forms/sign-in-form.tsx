@@ -9,10 +9,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { Funnel, identifyUser, track } from "@/lib/analytics/posthog";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -31,10 +32,19 @@ const initialErrorMap: Record<string, string> = {
 
 export function SignInForm({ nextPath, initialError }: { nextPath?: string; initialError?: string }) {
   const router = useRouter();
-  const [banner, setBanner] = useState<string | null>(
-    initialError ? initialErrorMap[initialError] ?? "Sign-in failed." : null,
-  );
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Show any initial error (e.g., ?error=credentials from middleware) once.
+  // Uses the global toast system so the message is visible against our
+  // dark hero backgrounds — the inline brick-soft banner used to vanish
+  // against the navy wash, which broke login debugging.
+  useEffect(() => {
+    if (initialError) {
+      toast.show(initialErrorMap[initialError] ?? "Sign-in failed.", "error");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialError]);
 
   const {
     register,
@@ -43,11 +53,11 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
+    mode: "onBlur",
   });
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
-    setBanner(null);
     track(Funnel.SignInSubmitted);
     try {
       const supabase = getSupabaseBrowserClient();
@@ -57,7 +67,16 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
       });
 
       if (error) {
-        setBanner(error.message || "Sign-in failed.");
+        // Supabase returns a few predictable strings — translate the
+        // important ones into user-friendly copy, fall back to raw.
+        const msg = error.message?.toLowerCase() ?? "";
+        let pretty = error.message || "Sign-in failed.";
+        if (msg.includes("email not confirmed")) {
+          pretty = "Check your email for a confirmation link before signing in.";
+        } else if (msg.includes("invalid login")) {
+          pretty = "Email or password doesn't match a Fixpass account.";
+        }
+        toast.show(pretty, "error");
         track(Funnel.SignInFailed, { reason: error.message });
         return;
       }
@@ -73,7 +92,7 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
       router.refresh();
     } catch (err) {
       console.error("[sign-in]", err);
-      setBanner("Unexpected error. Try again in a moment.");
+      toast.show("Unexpected error. Try again in a moment.", "error");
     } finally {
       setLoading(false);
     }
@@ -129,15 +148,13 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
           ) : null}
         </label>
 
-        {banner ? (
-          <p role="alert" className="rounded-2xl border border-brick/25 bg-brick-soft px-4 py-3 text-sm text-brick-ink">
-            {banner}
-          </p>
-        ) : null}
-
         <Button type="submit" loading={loading} iconRight={<ArrowRight size={16} />} className="mt-2">
           {loading ? "Signing in…" : "Log in"}
         </Button>
+
+        <p className="text-center text-xs text-ink-subtle">
+          Your session stays active for 30 days on this device.
+        </p>
       </form>
 
       <p className="mt-8 text-center text-sm text-ink-muted">

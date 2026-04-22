@@ -2,23 +2,35 @@
 
 // CostCalculator — interactive "vs hiring a handyman" math. Lets the
 // visitor slide a typical-visits-per-year dial + a typical-call-out
-// rate dial, shows savings vs the Gold annual price. Anchors the
-// value prop to a real dollar figure, which beats any marketing copy.
+// rate dial, shows savings vs the Fixpass 1-year prepaid price (the
+// cheapest per-month tier). Anchors the value prop to a real dollar
+// figure, which beats any marketing copy.
 
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { plans, planPerMonth, planPrice } from "@/lib/config/site-data";
 
 type Plan = "silver" | "gold" | "platinum";
 
 const PLAN_META: Record<
   Plan,
-  { name: string; monthly: number; annual: number; visits: number | "unlimited" }
+  { name: string; visits: number | "unlimited" }
 > = {
-  silver: { name: "Silver", monthly: 24.99, annual: 249.99, visits: 2 },
-  gold: { name: "Gold", monthly: 49.99, annual: 499.99, visits: 5 },
-  platinum: { name: "Platinum", monthly: 99.99, annual: 999.99, visits: "unlimited" },
+  silver: { name: "Silver", visits: 2 },
+  gold: { name: "Gold", visits: 5 },
+  platinum: { name: "Platinum", visits: "unlimited" },
 };
+
+// Resolve a plan's pricing data from the shared plan config so the
+// calculator always reflects the source of truth.
+function planData(id: Plan) {
+  const p = plans.find((pl) => pl.id === id)!;
+  return {
+    yearly: planPrice(p, "1yr"),
+    monthly: planPerMonth(p, "1yr"),
+  };
+}
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -46,7 +58,8 @@ export function CostCalculator({ defaultPlan = "gold" as Plan }: { defaultPlan?:
   }, [hourlyRate, minCallOut, visitsPerMonth]);
 
   const fixpass = PLAN_META[plan];
-  const fixpassAnnual = fixpass.annual;
+  const pricing = planData(plan);
+  const fixpassAnnual = pricing.yearly;
   const savings = Math.max(0, comparable.annual - fixpassAnnual);
   const fits =
     fixpass.visits === "unlimited" || visitsPerMonth <= (fixpass.visits as number);
@@ -125,9 +138,9 @@ export function CostCalculator({ defaultPlan = "gold" as Plan }: { defaultPlan?:
               tone="ink-muted"
             />
             <Row
-              label={`Fixpass ${fixpass.name} (annual)`}
+              label={`Fixpass ${fixpass.name} (1-year prepaid)`}
               value={formatMoney(fixpassAnnual)}
-              helper={`${formatMoney(fixpass.monthly)}/mo · billed yearly`}
+              helper={`${formatMoney(pricing.monthly)}/mo equivalent · billed yearly`}
               tone="royal"
             />
 

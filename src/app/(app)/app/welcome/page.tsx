@@ -1,5 +1,8 @@
-import { ArrowRight, CheckCircle2, Home, Wrench } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardList, Home, KeyRound, MapPin, Wrench } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { BalancedHeading } from "@/components/ui/balanced-heading";
+import { BlindsReveal } from "@/components/ui/blinds-reveal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
@@ -32,9 +35,14 @@ export default async function WelcomePage({
 
       <GradientCard tone="royal" className="sm:p-12">
         <Badge tone="inverse">Welcome aboard</Badge>
-        <h1 className="display-hero mt-4 text-4xl text-white sm:text-5xl lg:text-6xl">
-          You&apos;re in, {firstName}.
-        </h1>
+        <BalancedHeading
+          as="h1"
+          className="display-hero mt-4 text-4xl text-white sm:text-5xl lg:text-6xl"
+        >
+          <BlindsReveal slats={5} delay={0.15} slatColor="rgb(var(--royal))">
+            You&apos;re in, {firstName}.
+          </BlindsReveal>
+        </BalancedHeading>
         <p className="mt-6 max-w-2xl text-base leading-7 text-white/80 lg:text-lg">
           Your Fixpass membership is activating. You&apos;ll see it flip to <em>active</em> here in a
           few seconds as Stripe confirms the payment. While you wait, register your property so we can
@@ -112,6 +120,63 @@ export default async function WelcomePage({
             Open membership
           </Button>
         </Card>
+      </div>
+
+      {/* "What to do next" tiles — three concrete actions the user
+          can take right now. Keeps the momentum of the confetti moment
+          from fading into a blank dashboard. */}
+      <div>
+        <p className="eyebrow mb-4">What to do next</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              href: "/app/requests/new",
+              icon: ClipboardList,
+              label: "Submit your first request",
+              copy: "Something small to start — a shelf, a fixture, a sticky door.",
+              tone: "royal",
+            },
+            {
+              href: "/app/property",
+              icon: MapPin,
+              label: "Add access notes",
+              copy: "Gate code, lockbox, parking tips — saves time on every visit.",
+              tone: "emerald",
+            },
+            {
+              href: "/app/membership",
+              icon: KeyRound,
+              label: "Review your plan",
+              copy: "Confirm the cycle, covered visits, and when it renews.",
+              tone: "honey",
+            },
+          ].map((tile) => (
+            <Link
+              key={tile.href}
+              href={tile.href}
+              className="group focus-ring rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-0.5 hover:border-border-strong"
+            >
+              <div
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${
+                  tile.tone === "royal"
+                    ? "bg-royal-soft text-royal-ink"
+                    : tile.tone === "emerald"
+                    ? "bg-emerald-soft text-emerald-ink"
+                    : "bg-honey-soft text-ink"
+                }`}
+              >
+                <tile.icon className="h-4 w-4" aria-hidden />
+              </div>
+              <p className="mt-4 font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
+                {tile.label}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-ink-muted">{tile.copy}</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-royal opacity-0 transition group-hover:opacity-100">
+                Go <ArrowRight className="h-3 w-3" />
+              </span>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

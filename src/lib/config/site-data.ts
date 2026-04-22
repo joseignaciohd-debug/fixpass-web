@@ -1,13 +1,48 @@
 // Marketing copy + plan data used across marketing pages.
 // Keeping it centralized so voice tweaks happen in one place.
 
-export const plans = [
+// Billing model: 3-month, 6-month, or 1-year prepaid cycles.
+// Longer cycle = better per-month effective rate.
+
+export type BillingCycleId = "3mo" | "6mo" | "1yr";
+
+export const billingCycles: Array<{
+  id: BillingCycleId;
+  months: number;
+  label: string;
+  short: string;
+  badge?: string;
+}> = [
+  { id: "3mo", months: 3, label: "3 months", short: "3 mo" },
+  { id: "6mo", months: 6, label: "6 months", short: "6 mo", badge: "Most popular" },
+  { id: "1yr", months: 12, label: "1 year", short: "1 yr", badge: "Best value" },
+];
+
+export const DEFAULT_BILLING_CYCLE: BillingCycleId = "1yr";
+
+export type PlanId = "silver" | "gold" | "platinum";
+
+export type PlanPrices = Record<BillingCycleId, number>;
+
+export const plans: Array<{
+  id: PlanId;
+  name: string;
+  tagline: string;
+  prices: PlanPrices;
+  includedVisits: number | string;
+  maxRelatedTasks: number;
+  maxLaborMinutes: number;
+  priority: string;
+  outOfScopeDiscount: number;
+  materialsAllowance: number;
+  fairUseNotes: string | null;
+  featured: string | null;
+}> = [
   {
-    id: "silver" as const,
+    id: "silver",
     name: "Silver",
-    tagline: "Lighter upkeep. Peace of mind month-to-month.",
-    monthlyPrice: 24.99,
-    annualPrice: 249.99,
+    tagline: "Lighter upkeep. Peace of mind on your terms.",
+    prices: { "3mo": 74.99, "6mo": 124.99, "1yr": 244.99 },
     includedVisits: 2,
     maxRelatedTasks: 3,
     maxLaborMinutes: 90,
@@ -15,14 +50,13 @@ export const plans = [
     outOfScopeDiscount: 5,
     materialsAllowance: 0,
     fairUseNotes: null,
-    featured: null as null | string,
+    featured: null,
   },
   {
-    id: "gold" as const,
+    id: "gold",
     name: "Gold",
     tagline: "The core Fixpass plan for active households.",
-    monthlyPrice: 49.99,
-    annualPrice: 499.99,
+    prices: { "3mo": 149.99, "6mo": 273.99, "1yr": 503.99 },
     includedVisits: 5,
     maxRelatedTasks: 3,
     maxLaborMinutes: 90,
@@ -30,14 +64,13 @@ export const plans = [
     outOfScopeDiscount: 10,
     materialsAllowance: 0,
     fairUseNotes: null,
-    featured: "Best value",
+    featured: null,
   },
   {
-    id: "platinum" as const,
+    id: "platinum",
     name: "Platinum",
     tagline: "Highest priority, fair-use guardrails, materials covered.",
-    monthlyPrice: 99.99,
-    annualPrice: 999.99,
+    prices: { "3mo": 299.99, "6mo": 519.99, "1yr": 949.99 },
     includedVisits: "Unlimited",
     maxRelatedTasks: 3,
     maxLaborMinutes: 90,
@@ -48,6 +81,19 @@ export const plans = [
     featured: "Most complete",
   },
 ];
+
+// Helpers consumed by UI + schema + checkout.
+export function cycleMonths(cycle: BillingCycleId): number {
+  return billingCycles.find((c) => c.id === cycle)?.months ?? 1;
+}
+
+export function planPrice(plan: { prices: PlanPrices }, cycle: BillingCycleId): number {
+  return plan.prices[cycle];
+}
+
+export function planPerMonth(plan: { prices: PlanPrices }, cycle: BillingCycleId): number {
+  return plan.prices[cycle] / cycleMonths(cycle);
+}
 
 export const serviceInventory = [
   { title: "TV & shelf mounting",       copy: "Brackets, anchors, level-checked installs." },
@@ -99,7 +145,7 @@ export const faqs = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes — Fixpass is month-to-month. Cancel before your next billing cycle from the billing portal and your membership continues to the end of the current paid period, then stops. No cancellation fees. Annual subscribers get a prorated refund if you cancel within the first 30 days.",
+    a: "Yes. Cancel anytime from the Stripe billing portal and your membership continues through the end of the current prepaid term, then stops renewing. No cancellation fees. Within the first 30 days of a fresh term you can request a prorated refund by emailing hello@getfixpass.com.",
   },
   {
     q: "What if Fixpass messes up my home?",

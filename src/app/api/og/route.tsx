@@ -1,6 +1,12 @@
 // Dynamic Open Graph image. Any page can reference /api/og?title=...
 // to get a 1200x630 PNG that Twitter/Slack/iMessage render inline.
 // Uses @vercel/og which runs as an Edge function for fast cold starts.
+//
+// Edge runtime specifically — Node runtime on Vercel fails to bundle
+// @vercel/og's wasm binary ("Cannot find module index.node.js").
+// That's why we fetch+base64 the brand PNG instead of reading it off
+// disk: the file isn't in the edge bundle, but HTTP to our own origin
+// is reliable.
 
 import { ImageResponse } from "@vercel/og";
 
@@ -24,13 +30,39 @@ async function loadFraunces() {
   }
 }
 
+// Fetch the brand PNG from our own public/ directory via HTTP and
+// turn it into a data URL. Satori's built-in <img> loader failed
+// silently in edge runtime — inlining bytes is bulletproof.
+async function loadMark(origin: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${origin}/brand/fixpass-mark.png`);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const base64 = arrayBufferToBase64(buf);
+    return `data:image/png;base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
+// Edge runtime has Buffer but not the Node Buffer.toString('base64')
+// helper in all environments. This works everywhere Uint8Array does.
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  // btoa is available in edge runtime.
+  return typeof btoa === "function" ? btoa(bin) : "";
+}
+
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const url = new URL(request.url);
+  const { searchParams } = url;
   const title = (searchParams.get("title") ?? "Home maintenance, handled.").slice(0, 120);
   const eyebrow = (searchParams.get("eyebrow") ?? "Fixpass — Katy, TX").slice(0, 80);
   const subtitle = (searchParams.get("subtitle") ?? "").slice(0, 160);
 
-  const fraunces = await loadFraunces();
+  const [fraunces, markUrl] = await Promise.all([loadFraunces(), loadMark(url.origin)]);
 
   return new ImageResponse(
     (
@@ -76,24 +108,49 @@ export async function GET(request: Request) {
           }}
         />
 
-        {/* Eyebrow */}
+        {/* Eyebrow — real brand mark on a cream tile (PNG is navy on
+            transparent, so it reads cleanly against the neutral square
+            without needing a white variant). */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, zIndex: 2 }}>
           <div
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 10,
-              background: "#FFFFFF",
-              color: "#0B1B3A",
+              width: 56,
+              height: 56,
+              borderRadius: 12,
+              background: "#F4F0E4",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 24,
-              fontWeight: 800,
-              fontFamily: "Inter, sans-serif",
             }}
           >
-            F
+            {markUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={markUrl}
+                alt=""
+                width={40}
+                height={40}
+                style={{ objectFit: "contain" }}
+              />
+            ) : (
+              // Fallback if the mark PNG fetch failed — a bold "F" on
+              // cream at least keeps the OG card on-brand instead of
+              // crashing the render.
+              <div
+                style={{
+                  color: "#0B1B3A",
+                  fontSize: 28,
+                  fontWeight: 800,
+                  fontFamily: "Inter, sans-serif",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                }}
+              >
+                F
+              </div>
+            )}
           </div>
           <div
             style={{

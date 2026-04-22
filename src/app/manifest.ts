@@ -15,8 +15,11 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     categories: ["lifestyle", "productivity", "utilities"],
     icons: [
-      { src: "/icon", sizes: "64x64", type: "image/png" },
-      { src: "/apple-icon", sizes: "180x180", type: "image/png" },
+      { src: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { src: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { src: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+      { src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
     ],
   };
 }

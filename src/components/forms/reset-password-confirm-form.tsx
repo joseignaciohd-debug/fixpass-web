@@ -57,6 +57,7 @@ export function ResetPasswordConfirmForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { password: "", confirm: "" },
+    mode: "onBlur",
   });
 
   async function onSubmit(values: FormValues) {

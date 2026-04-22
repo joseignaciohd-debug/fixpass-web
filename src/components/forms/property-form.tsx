@@ -65,6 +65,7 @@ export function PropertyForm({
       homeType: initial?.homeType ?? "",
       accessNotes: initial?.accessNotes ?? "",
     },
+    mode: "onBlur",
   });
 
   async function onSubmit(values: FormValues) {

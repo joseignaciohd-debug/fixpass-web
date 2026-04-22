@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { FixpassWordmark } from "@/components/ui/brand-mark";
+import { AdminBreadcrumbs } from "@/components/layout/admin-breadcrumbs";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +106,10 @@ export function AdminShell({
           </div>
         </aside>
 
-        <main className="min-w-0 space-y-6">{children}</main>
+        <main className="min-w-0 space-y-6">
+          <AdminBreadcrumbs />
+          {children}
+        </main>
       </div>
     </div>
   );

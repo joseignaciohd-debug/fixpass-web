@@ -29,6 +29,7 @@ export function ResetPasswordForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: "" },
+    mode: "onBlur",
   });
 
   async function onSubmit(values: FormValues) {

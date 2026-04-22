@@ -3,7 +3,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
-  CreditCard,
   Handshake,
   Heart,
   ShieldCheck,
@@ -12,6 +11,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BalancedHeading } from "@/components/ui/balanced-heading";
+import { BlindsReveal } from "@/components/ui/blinds-reveal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
@@ -19,13 +20,17 @@ import { IconTile } from "@/components/ui/icon-tile";
 import { Reveal } from "@/components/ui/reveal";
 import { Timeline, TimelineStep } from "@/components/ui/timeline";
 import { FixpassMark, FIXPASS_TAGLINE } from "@/components/ui/brand-mark";
+import { DoorHandleCard } from "@/components/marketing/door-handle-card";
+import { HammerScrollShowcase } from "@/components/marketing/hammer-scroll-showcase";
 import { TrustBadges } from "@/components/marketing/trust-badges";
 import { JsonLd, faqPageLd, localBusinessLd, organizationLd } from "@/lib/seo/jsonld";
 import {
+  DEFAULT_BILLING_CYCLE,
   defaultRules,
   excludedServices,
   faqs,
   plans,
+  planPerMonth,
   serviceInventory,
   testimonials,
 } from "@/lib/config/site-data";
@@ -42,18 +47,11 @@ const pillars = [
   { icon: Star,        title: "Exceptional", copy: "A premium experience from request to the final walk-through.",       tone: "lapis"   as const },
 ];
 
-const highlights = [
-  "One property, one plan, defined visits",
-  "24-hour response, 1–3 day scheduling target",
-  "Operator-reviewed requests — no chaos",
-  "Out-of-scope work gets a transparent quote",
-];
-
 const steps = [
   {
     step: "01",
     title: "Pick a plan",
-    copy: "Silver, Gold, or Platinum — billed monthly through Stripe with a single property on file.",
+    copy: "Silver, Gold, or Platinum — prepay 3, 6, or 12 months through Stripe with a single property on file.",
     tone: "royal" as const,
   },
   {
@@ -86,10 +84,23 @@ export default function HomePage() {
               <Badge tone="emerald" icon={<span className="h-1.5 w-1.5 rounded-full bg-emerald" />}>
                 Now serving Katy, Texas
               </Badge>
-              <h1 className="display-hero mt-6 text-[3.25rem] text-ink sm:text-[4rem] lg:text-[4.75rem]">
-                Home maintenance,
-                <span className="block text-royal">handled.</span>
-              </h1>
+              <BalancedHeading
+                as="h1"
+                className="display-hero mt-6 text-[3.25rem] text-ink sm:text-[4rem] lg:text-[4.75rem]"
+              >
+                {/* Two staggered blinds reveals — the second has a longer
+                    delay so "handled." arrives after "Home maintenance,"
+                    is already on screen. The rhythm matches a spoken
+                    line-break, not a mechanical simultaneous fade. */}
+                <BlindsReveal slats={5} delay={0.1}>
+                  Home maintenance,
+                </BlindsReveal>
+                <span className="block text-royal">
+                  <BlindsReveal slats={5} delay={0.45}>
+                    handled.
+                  </BlindsReveal>
+                </span>
+              </BalancedHeading>
               <p className="mt-7 max-w-xl text-lg leading-8 text-ink-muted">
                 Fixpass turns scattered home-repair calls into a premium membership.
                 Predictable pricing, trusted technicians, and a calmer way to keep
@@ -114,41 +125,13 @@ export default function HomePage() {
 
             <Reveal direction="up" delay={0.12}>
               <div className="relative">
-                <GradientCard tone="royal">
-                  <div className="relative flex items-start justify-between">
-                    <span className="eyebrow-light">Membership promise</span>
-                    <FixpassMark size={40} color="currentColor" strokeWidth={6} />
-                  </div>
-
-                  <p className="relative mt-8 font-[family-name:var(--font-display)] text-3xl font-semibold leading-tight text-white sm:text-4xl">
-                    Better to have it and not need it, than to need it and not have it.
-                  </p>
-
-                  <div className="relative mt-10 grid gap-3 sm:grid-cols-2">
-                    {highlights.map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-start gap-3 rounded-2xl border border-white/15 bg-white/[0.08] p-4 text-sm leading-6 text-white/90 backdrop-blur"
-                      >
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-honey" />
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="relative mt-8 flex items-center gap-4 rounded-2xl border border-white/15 bg-white/[0.08] p-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-ink">
-                      <CreditCard size={20} />
-                    </div>
-                    <div className="flex-1 text-sm">
-                      <div className="font-semibold text-white">Billing runs on Stripe</div>
-                      <div className="text-white/70">Secure checkout, receipts, and a self-serve portal.</div>
-                    </div>
-                  </div>
-                </GradientCard>
+                {/* Signature hero interaction — user turns a brass handle
+                    to "open" the Fixpass promise. Falls back to a static
+                    opened card when prefers-reduced-motion is set. */}
+                <DoorHandleCard />
 
                 <div className="absolute -bottom-6 left-8 hidden items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-ink shadow-[0_18px_45px_-24px_rgb(var(--shadow)/0.3)] md:inline-flex">
-                  <FixpassMark size={20} strokeWidth={8} />
+                  <FixpassMark size={20} />
                   {FIXPASS_TAGLINE}
                 </div>
               </div>
@@ -192,6 +175,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------------------------ */}
+      {/* HAMMER SCROLL SHOWCASE                             */}
+      {/* ------------------------------------------------ */}
+      <HammerScrollShowcase />
 
       {/* ------------------------------------------------ */}
       {/* SERVICE INVENTORY                                  */}
@@ -349,11 +337,18 @@ export default function HomePage() {
 
                   <div className="mt-7 flex items-baseline gap-2">
                     <span
+                      className={`text-sm font-medium ${
+                        isPlatinum ? "text-white/60" : "text-ink-muted"
+                      }`}
+                    >
+                      from
+                    </span>
+                    <span
                       className={`font-[family-name:var(--font-display)] text-5xl font-semibold tracking-tight ${
                         isPlatinum ? "text-white" : "text-ink"
                       }`}
                     >
-                      {currency(plan.monthlyPrice)}
+                      {currency(planPerMonth(plan, DEFAULT_BILLING_CYCLE))}
                     </span>
                     <span
                       className={`text-sm font-medium ${
@@ -367,7 +362,7 @@ export default function HomePage() {
                     {typeof plan.includedVisits === "number"
                       ? `${plan.includedVisits} covered visits`
                       : plan.includedVisits}{" "}
-                    · billed via Stripe
+                    · prepay 3, 6, or 12 mo via Stripe
                   </p>
 
                   <ul
@@ -573,7 +568,7 @@ export default function HomePage() {
                   Start Fixpass.
                 </h2>
                 <p className="mt-6 max-w-xl text-base leading-7 text-white/78">
-                  Join the membership built for busy households in Katy. A single monthly charge, a team of
+                  Join the membership built for busy households in Katy. One prepaid term, a team of
                   operators watching every request, and a home that stays looked-after without the
                   phone-tree spiral.
                 </p>
@@ -592,7 +587,7 @@ export default function HomePage() {
 
               <div className="relative">
                 <div className="rounded-3xl border border-white/15 bg-white/[0.07] p-6 backdrop-blur">
-                  <FixpassMark size={52} color="currentColor" strokeWidth={6} />
+                  <FixpassMark size={52} onDark />
                   <p className="mt-6 font-[family-name:var(--font-display)] text-2xl font-semibold leading-snug text-white">
                     {FIXPASS_TAGLINE}
                   </p>

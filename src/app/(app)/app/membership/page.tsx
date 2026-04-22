@@ -6,7 +6,7 @@ import { GradientCard } from "@/components/ui/gradient-card";
 import { StatRing } from "@/components/ui/stat-ring";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
-import { plans } from "@/lib/config/site-data";
+import { DEFAULT_BILLING_CYCLE, plans, planPerMonth, planPrice } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -117,10 +117,17 @@ export default async function MembershipPage() {
                     isPlatinum ? "text-white" : "text-ink"
                   }`}
                 >
-                  {currency(p.monthlyPrice)}
+                  {currency(planPerMonth(p, DEFAULT_BILLING_CYCLE))}
                   <span className={`ml-1 text-sm font-normal ${isPlatinum ? "text-white/70" : "text-ink-muted"}`}>
                     /mo
                   </span>
+                </p>
+                <p
+                  className={`mt-1 text-xs ${
+                    isPlatinum ? "text-white/60" : "text-ink-subtle"
+                  }`}
+                >
+                  {currency(planPrice(p, DEFAULT_BILLING_CYCLE))} billed yearly · other terms available
                 </p>
                 <p
                   className={`mt-2 text-sm leading-6 ${

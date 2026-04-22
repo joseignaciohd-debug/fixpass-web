@@ -22,11 +22,15 @@ export const dynamic = "force-dynamic";
 type StripeEvent = Stripe.Event;
 
 const PRICE_TO_PLAN: Record<string, string> = {};
+const PRICE_TO_CYCLE: Record<string, string> = {};
 for (const [envKey, envValue] of Object.entries(process.env)) {
-  // Build price-id → plan-code map from env vars at module load.
-  // e.g. STRIPE_PRICE_GOLD_MONTHLY → gold
-  const m = envKey.match(/^STRIPE_PRICE_(SILVER|GOLD|PLATINUM)_(MONTHLY|ANNUAL)$/);
-  if (m && envValue) PRICE_TO_PLAN[envValue] = m[1].toLowerCase();
+  // Build price-id → plan-code + cycle map from env vars at module load.
+  // e.g. STRIPE_PRICE_GOLD_6MO → gold + 6mo
+  const m = envKey.match(/^STRIPE_PRICE_(SILVER|GOLD|PLATINUM)_(3MO|6MO|1YR)$/);
+  if (m && envValue) {
+    PRICE_TO_PLAN[envValue] = m[1].toLowerCase();
+    PRICE_TO_CYCLE[envValue] = m[2].toLowerCase();
+  }
 }
 
 export async function POST(request: Request) {
@@ -136,8 +140,15 @@ async function syncSubscription(
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
   const firstItem = subscription.items.data[0];
   const priceId = firstItem?.price?.id ?? "";
-  const interval = firstItem?.price?.recurring?.interval ?? "month";
-  const billingCycle = interval === "year" ? "annual" : "monthly";
+  // Prefer explicit metadata written at checkout (3mo/6mo/1yr). Fall back
+  // to the env-var map for subs created outside the app. Final fallback
+  // uses Stripe's interval + count (month×3, month×6, year).
+  const recurring = firstItem?.price?.recurring;
+  const intervalCount = recurring?.interval_count ?? 1;
+  const interval = recurring?.interval ?? "month";
+  const derivedCycle =
+    interval === "year" ? "1yr" : intervalCount === 6 ? "6mo" : intervalCount === 3 ? "3mo" : "1yr";
+  const billingCycle = metadata.billing_cycle ?? PRICE_TO_CYCLE[priceId] ?? derivedCycle;
   const planCode = metadata.plan_code ?? PRICE_TO_PLAN[priceId];
   if (!planCode) {
     // Can't map to a plan — log + skip. Still acknowledge the webhook.

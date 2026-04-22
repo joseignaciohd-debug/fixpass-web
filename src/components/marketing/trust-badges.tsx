@@ -38,7 +38,7 @@ const badges = [
   {
     icon: CreditCard,
     title: "Cancel anytime",
-    copy: "Month-to-month. Coverage continues to your renewal date, then stops.",
+    copy: "Coverage continues through the prepaid term, then stops. No auto-renew surprises.",
     tone: "basil" as const,
   },
 ];
@@ -66,8 +66,10 @@ export function TrustBadges({
       className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-${compact ? "4" : "3"} ${className}`}
     >
       {list.map((b, i) => (
-        <Reveal key={b.title} delay={0.04 * i}>
-          <div className="flex h-full items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+        // Slightly stronger stagger (0.08s per tile) so the grid "types in"
+        // as it scrolls into view — matches the rest of the marketing motion.
+        <Reveal key={b.title} delay={0.08 * i}>
+          <div className="flex h-full items-start gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-border-strong">
             <span
               className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[b.tone]}`}
               aria-hidden

@@ -44,6 +44,7 @@ export function NewRequestForm({ userId }: { userId: string }) {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { title: "", description: "", area: "", preferredWindow: "", notes: "" },
+    mode: "onBlur",
   });
 
   async function onSubmit(values: FormValues) {

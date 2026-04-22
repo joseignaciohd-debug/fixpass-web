@@ -1,15 +1,30 @@
-import { CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { StepDots } from "@/components/ui/step-dots";
-import { plans } from "@/lib/config/site-data";
-import { currency } from "@/lib/utils";
+import { SubscribePlans } from "@/components/subscribe/subscribe-plans";
+import type { BillingCycleId, PlanId } from "@/lib/config/site-data";
 
 export const dynamic = "force-dynamic";
 
-export default function SubscribePage() {
+const VALID_PLANS: PlanId[] = ["silver", "gold", "platinum"];
+const VALID_CYCLES: BillingCycleId[] = ["3mo", "6mo", "1yr"];
+
+export default async function SubscribePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const planParam = typeof params.plan === "string" ? params.plan : undefined;
+  const cycleParam = typeof params.cycle === "string" ? params.cycle : undefined;
+  const preselectPlan = VALID_PLANS.includes(planParam as PlanId)
+    ? (planParam as PlanId)
+    : undefined;
+  const preselectCycle = VALID_CYCLES.includes(cycleParam as BillingCycleId)
+    ? (cycleParam as BillingCycleId)
+    : undefined;
+
   return (
     <div className="space-y-6">
       <GradientCard tone="royal" className="sm:p-10">
@@ -30,67 +45,12 @@ export default function SubscribePage() {
         <p className="eyebrow">Step 1</p>
         <h2 className="display-section mt-2 text-2xl text-ink">Choose your plan</h2>
         <p className="mt-3 text-sm leading-6 text-ink-muted">
-          Pick the level of home support that fits you. You can change plans later from Membership.
+          Prepay 3, 6, or 12 months — longer terms lock in a better per-month rate. Plan changes
+          flow through Stripe's billing portal later.
         </p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {plans.map((p) => {
-            const isPlatinum = p.id === "platinum";
-            return (
-              <div
-                key={p.id}
-                className={`rounded-2xl border p-5 ${
-                  isPlatinum
-                    ? "border-royal/30 bg-gradient-to-br from-ink via-royal to-lapis text-white"
-                    : p.id === "gold"
-                    ? "border-honey/40 bg-honey-soft text-ink ring-1 ring-honey/40"
-                    : "border-border bg-surface text-ink"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  {p.featured ? (
-                    <Badge tone={isPlatinum ? "inverse" : p.id === "gold" ? "honey" : "default"}>
-                      {p.featured}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-ink-subtle">{p.priority}</span>
-                  )}
-                </div>
-                <h3
-                  className={`mt-4 font-[family-name:var(--font-display)] text-2xl font-semibold ${
-                    isPlatinum ? "text-white" : "text-ink"
-                  }`}
-                >
-                  {p.name}
-                </h3>
-                <p
-                  className={`mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold ${
-                    isPlatinum ? "text-white" : "text-ink"
-                  }`}
-                >
-                  {currency(p.monthlyPrice)}
-                  <span className={`ml-1 text-sm font-normal ${isPlatinum ? "text-white/70" : "text-ink-muted"}`}>
-                    /mo
-                  </span>
-                </p>
-                <p className={`mt-2 text-sm ${isPlatinum ? "text-white/80" : "text-ink-muted"}`}>
-                  {typeof p.includedVisits === "number" ? `${p.includedVisits} covered visits` : p.includedVisits}
-                </p>
-                <form action="/api/billing/checkout" method="post" className="mt-5">
-                  <input type="hidden" name="planId" value={p.id} />
-                  <input type="hidden" name="billingCycle" value="monthly" />
-                  <Button
-                    type="submit"
-                    variant={isPlatinum ? "inverse" : "primary"}
-                    fullWidth
-                    iconLeft={<CreditCard className="h-4 w-4" />}
-                  >
-                    Continue with {p.name}
-                  </Button>
-                </form>
-              </div>
-            );
-          })}
+        <div className="mt-6">
+          <SubscribePlans preselectPlan={preselectPlan} preselectCycle={preselectCycle} />
         </div>
       </Card>
 

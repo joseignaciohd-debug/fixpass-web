@@ -25,7 +25,7 @@ export default async function SignInPage({
         <Reveal>
           <div className="surface-dark relative overflow-hidden rounded-[var(--radius-xl)] p-8 sm:p-12 lg:p-16">
             <div className="relative flex items-center justify-between">
-              <FixpassMark size={48} color="currentColor" strokeWidth={6} />
+              <FixpassMark size={48} onDark />
               <Link
                 href="/"
                 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60 transition hover:text-white"
