@@ -77,7 +77,9 @@ export default function CoveragePage() {
             </div>
             <p className="mt-4 text-sm leading-7 text-ink-muted">
               Anything requiring licensed trades or that exceeds the visit envelope gets handed off to a
-              partner with a transparent quote — and your member discount still applies.
+              partner with a transparent quote — and your member discount still applies. Outdoor work like
+              fence painting and driveway pressure washing is offered to members but quoted separately, not
+              counted against a covered visit.
             </p>
             <ul className="mt-6 grid gap-2">
               {excludedServices.map((s) => (

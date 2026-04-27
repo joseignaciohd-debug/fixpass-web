@@ -95,15 +95,20 @@ export function planPerMonth(plan: { prices: PlanPrices }, cycle: BillingCycleId
   return plan.prices[cycle] / cycleMonths(cycle);
 }
 
+// Canonical covered services. Outdoor work (fence painting, driveway
+// pressure washing, etc.) is offered to members but quoted separately
+// rather than counted as a covered visit — see `/coverage` and FAQ.
 export const serviceInventory = [
-  { title: "TV & shelf mounting",       copy: "Brackets, anchors, level-checked installs." },
-  { title: "Art, mirrors & decor",      copy: "Gallery hangs and large-mirror placements." },
-  { title: "Furniture assembly",        copy: "From flat-pack dressers to bed frames." },
-  { title: "Door hardware",             copy: "Sticking doors, loose handles, soft-close fixes." },
-  { title: "Drywall & paint touch-up",  copy: "Anchor holes, scuffs, nail pops — gone." },
-  { title: "Light fixtures & switches", copy: "Swap fixtures, replace plates and dimmers." },
-  { title: "Curtains & blinds",         copy: "Measure, mount, align — rooms feel finished." },
-  { title: "Smart-home setup",          copy: "Doorbells, sensors, thermostats configured right." },
+  { title: "TV mounting",                 copy: "Brackets, anchors, cable management, level-checked." },
+  { title: "Shelves, mirrors & décor",    copy: "Floating shelves, mirrors, towel racks, gallery hangs." },
+  { title: "Furniture assembly",          copy: "Flat-pack dressers, bed frames, desks, bookcases." },
+  { title: "Interior door hardware",      copy: "Hinges, handles, latches, soft-close adjustments." },
+  { title: "Cabinet handles",             copy: "Knobs and pulls, drilled and aligned cleanly." },
+  { title: "Drywall & paint touch-ups",   copy: "Anchor holes, scuffs, nail pops, small patches." },
+  { title: "Kitchen & bath touch-ups",    copy: "Caulking refresh, shower curtain rods and liners." },
+  { title: "Light fixtures & switches",   copy: "Swap fixtures, replace plates and dimmers." },
+  { title: "Blinds & curtains",           copy: "Measure, mount, align — rooms feel finished." },
+  { title: "Closet systems",              copy: "Wire, melamine, or organizer kits, installed level." },
 ];
 
 export const excludedServices = [
@@ -125,11 +130,11 @@ export const defaultRules = [
 export const faqs = [
   {
     q: "What counts as a covered fix?",
-    a: "Small-to-medium handyman work completed in a single visit — fixture swaps, TV mounting, drywall patching, door adjustments, minor repairs. Up to 3 related tasks or one moderately sized job per visit, within a 90-minute labor cap.",
+    a: "Small-to-medium interior work completed in a single visit — TV mounting, shelves and mirrors, furniture assembly, drywall and paint touch-ups, kitchen and bathroom caulking, cabinet handles, interior door hardware, light fixtures and switches, blinds and curtains, and closet systems. Up to 3 related tasks or one moderately sized job per visit, within a 90-minute labor cap.",
   },
   {
     q: "What's NOT covered?",
-    a: "Anything that requires a licensed trade (new electrical circuits, plumbing re-pipes, water heater installs), major remodels, rough-framing, roofing, foundation work, tree removal, HVAC refrigerant work, or appliance repair under manufacturer warranty. We'll quote those separately with your member discount or refer a partner.",
+    a: "Anything that requires a licensed trade (new electrical circuits, plumbing re-pipes, water heater installs), major remodels, rough-framing, roofing, foundation work, tree removal, HVAC refrigerant work, or appliance repair under manufacturer warranty. Outdoor work — fence painting, driveway pressure washing, exterior touch-ups — is offered to members but quoted separately rather than counted against a covered visit. We'll quote licensed-trade work with your member discount or refer a partner.",
   },
   {
     q: "Are materials included?",
