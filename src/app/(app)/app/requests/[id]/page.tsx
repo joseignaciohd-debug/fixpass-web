@@ -1,6 +1,16 @@
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Camera,
+  CheckCircle2,
+  ClipboardList,
+  Image as ImageIcon,
+  MapPin,
+  Truck,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -8,6 +18,38 @@ import { Timeline, TimelineStep } from "@/components/ui/timeline";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+// Event kinds match the migration's check constraint exactly. Each
+// gets a label, an icon, and a tone so the timeline reads like a
+// real activity feed instead of a generic 4-step bar.
+const EVENT_META: Record<
+  string,
+  { label: string; icon: LucideIcon; tone: "royal" | "sky" | "emerald" | "muted" | "honey" }
+> = {
+  submitted:         { label: "Request submitted",     icon: ClipboardList, tone: "royal" },
+  reviewed:          { label: "Operator reviewed",     icon: CheckCircle2,  tone: "sky" },
+  scheduled:         { label: "Scheduled",             icon: CalendarDays,  tone: "sky" },
+  rescheduled:       { label: "Rescheduled",           icon: CalendarDays,  tone: "honey" },
+  en_route:          { label: "Technician en route",   icon: Truck,         tone: "sky" },
+  arrived:           { label: "Technician on site",    icon: MapPin,        tone: "sky" },
+  photo_added:       { label: "Photo added",           icon: Camera,        tone: "muted" },
+  note_added:        { label: "Note added",            icon: ClipboardList, tone: "muted" },
+  completed:         { label: "Visit complete",        icon: CheckCircle2,  tone: "emerald" },
+  cancelled:         { label: "Cancelled",             icon: ClipboardList, tone: "muted" },
+  quoted_separately: { label: "Quoted separately",     icon: ClipboardList, tone: "honey" },
+};
+
+type EventRow = {
+  id: string;
+  kind: string;
+  body: string | null;
+  actorRole: string | null;
+  actorName: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+};
+
+type PhotoRow = { id: string; storagePath: string; createdAt: string };
 
 export default async function RequestDetailPage({
   params,
@@ -27,29 +69,91 @@ export default async function RequestDetailPage({
     createdAt: string;
     notes: string | null;
   } | null = null;
+  let events: EventRow[] = [];
+  let photos: PhotoRow[] = [];
+  let signedPhotoUrls: string[] = [];
 
+  // Each query is wrapped in its own try so a missing table (e.g.
+  // before migration 007 has been applied) only degrades the page
+  // gracefully instead of taking it down to notFound.
+  let supabase: Awaited<ReturnType<typeof getSupabaseServerClient>> | null = null;
   try {
-    const supabase = await getSupabaseServerClient();
-    const { data: row } = await supabase
-      .from("service_requests")
-      .select("id, title, description, status, area, preferred_window, scheduled_for, created_at, notes")
-      .eq("id", id)
-      .maybeSingle();
-    if (row) {
-      data = {
-        id: row.id as string,
-        title: row.title as string,
-        description: (row.description as string) ?? "",
-        status: (row.status as string) ?? "pending",
-        area: (row.area as string) ?? null,
-        preferredWindow: (row.preferred_window as string) ?? null,
-        scheduledFor: (row.scheduled_for as string) ?? null,
-        createdAt: row.created_at as string,
-        notes: (row.notes as string) ?? null,
-      };
-    }
+    supabase = await getSupabaseServerClient();
   } catch {
-    /* DB not available — fall through to notFound */
+    /* env not configured — handled below by data being null */
+  }
+
+  if (supabase) {
+    try {
+      const { data: row } = await supabase
+        .from("service_requests")
+        .select("id, title, description, status, area, preferred_window, scheduled_for, created_at, notes")
+        .eq("id", id)
+        .maybeSingle();
+      if (row) {
+        data = {
+          id: row.id as string,
+          title: row.title as string,
+          description: (row.description as string) ?? "",
+          status: (row.status as string) ?? "pending",
+          area: (row.area as string) ?? null,
+          preferredWindow: (row.preferred_window as string) ?? null,
+          scheduledFor: (row.scheduled_for as string) ?? null,
+          createdAt: row.created_at as string,
+          notes: (row.notes as string) ?? null,
+        };
+      }
+    } catch {
+      /* request row failed — fall through to notFound */
+    }
+
+    try {
+      const { data: rows } = await supabase
+        .from("service_request_events")
+        .select("id, kind, body, actor_role, actor_name, metadata, created_at")
+        .eq("service_request_id", id)
+        .order("created_at", { ascending: true });
+      events = (rows ?? []).map((e) => ({
+        id: e.id as string,
+        kind: e.kind as string,
+        body: (e.body as string) ?? null,
+        actorRole: (e.actor_role as string) ?? null,
+        actorName: (e.actor_name as string) ?? null,
+        metadata: (e.metadata as Record<string, unknown>) ?? null,
+        createdAt: e.created_at as string,
+      }));
+    } catch {
+      /* events table missing (pre-migration) — page still renders */
+    }
+
+    try {
+      const { data: rows } = await supabase
+        .from("service_request_photos")
+        .select("id, storage_path, created_at")
+        .eq("service_request_id", id)
+        .order("created_at", { ascending: true });
+      photos = (rows ?? []).map((p) => ({
+        id: p.id as string,
+        storagePath: p.storage_path as string,
+        createdAt: p.created_at as string,
+      }));
+
+      // Sign photo URLs server-side so the client never needs the
+      // service-role key. 5-minute expiry is plenty for a page render.
+      if (photos.length > 0) {
+        const signed = await Promise.all(
+          photos.map(async (p) => {
+            const { data: u } = await supabase!.storage
+              .from("service-request-photos")
+              .createSignedUrl(p.storagePath, 60 * 5);
+            return u?.signedUrl ?? null;
+          }),
+        );
+        signedPhotoUrls = signed.filter((u): u is string => Boolean(u));
+      }
+    } catch {
+      /* photos table / bucket missing — page still renders */
+    }
   }
 
   if (!data) notFound();
@@ -103,41 +207,86 @@ export default async function RequestDetailPage({
         </div>
       </Card>
 
+      {/* Photo strip — only renders when the customer attached
+          photos. Signed URLs are minted server-side so RLS still
+          guards the bucket. */}
+      {signedPhotoUrls.length > 0 ? (
+        <Card>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="eyebrow">Attached photos</p>
+              <h2 className="display-section mt-2 text-xl text-ink">
+                {signedPhotoUrls.length === 1
+                  ? "1 reference photo"
+                  : `${signedPhotoUrls.length} reference photos`}
+              </h2>
+            </div>
+            <ImageIcon className="h-5 w-5 text-ink-subtle" aria-hidden />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {signedPhotoUrls.map((url, i) => (
+              <div
+                key={url}
+                className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-canvas-elevated"
+              >
+                {/* Plain <img> here — Next/Image needs config to allow
+                    Supabase signed URLs as a remote pattern, and the
+                    images are short-lived anyway. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={`Reference photo ${i + 1}`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Activity feed — driven by service_request_events. Replaces
+          the old hardcoded 4-step timeline. */}
       <Card>
-        <p className="eyebrow">Status history</p>
+        <p className="eyebrow">Activity</p>
         <h2 className="display-section mt-2 text-2xl text-ink">Where your request stands</h2>
-        <Timeline className="mt-6">
-          <TimelineStep
-            index="1"
-            title="Request submitted"
-            description={`You submitted this request on ${createdLabel}.`}
-            tone="royal"
-          />
-          <TimelineStep
-            index="2"
-            title="Operator review"
-            description="An operator reviews scope + confirms coverage. Typical: under 24 hours."
-            tone={data.status === "pending" ? "muted" : "sky"}
-          />
-          <TimelineStep
-            index="3"
-            title="Scheduled"
-            description={
-              data.scheduledFor
-                ? `Scheduled for ${new Date(data.scheduledFor).toLocaleString()}.`
-                : "We'll confirm a window with you."
-            }
-            tone={data.scheduledFor ? "sky" : "muted"}
-          />
-          <TimelineStep
-            index="4"
-            title="Visit complete"
-            description="Technician wraps up, ops sends a brief write-up."
-            tone={data.status.toLowerCase() === "completed" ? "emerald" : "muted"}
-            last
-          />
-        </Timeline>
+        {events.length === 0 ? (
+          <p className="mt-5 text-sm leading-7 text-ink-muted">
+            Activity will appear here as the operator reviews and dispatches your request.
+          </p>
+        ) : (
+          <Timeline className="mt-6">
+            {events.map((e, i) => {
+              const meta = EVENT_META[e.kind] ?? {
+                label: e.kind,
+                icon: ClipboardList,
+                tone: "muted" as const,
+              };
+              const when = new Date(e.createdAt).toLocaleString([], {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              });
+              const description = [e.body, e.actorName ? `— ${e.actorName}` : null]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <TimelineStep
+                  key={e.id}
+                  index={i + 1}
+                  title={meta.label}
+                  description={description || undefined}
+                  meta={when}
+                  tone={meta.tone}
+                  last={i === events.length - 1}
+                />
+              );
+            })}
+          </Timeline>
+        )}
       </Card>
     </div>
   );
 }
+

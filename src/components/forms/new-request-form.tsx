@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { PhotoUpload } from "@/components/forms/photo-upload";
 import { createServiceRequest } from "@/app/(app)/app/requests/actions";
+import { ScopeHint } from "@/components/forms/scope-hint";
+import { serviceInventory } from "@/lib/config/site-data";
 
 const schema = z.object({
   title: z.string().trim().min(4, "A quick label — e.g. 'Patch nursery wall'.").max(120),
@@ -27,7 +29,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const quickCategories = ["Drywall patch", "Door adjust", "Caulk touch-up", "Shelves or decor"];
+// Quick-pick categories driven by the canonical service inventory in
+// `lib/config/site-data.ts`. Selecting a chip prefills the title; the
+// member can still write their own. Stays in sync with the marketing
+// page + mobile app automatically.
+const quickCategories = serviceInventory.map((s) => s.title);
 
 export function NewRequestForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -70,6 +76,8 @@ export function NewRequestForm({ userId }: { userId: string }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
+      <ScopeHint />
+
       <div className="flex flex-wrap gap-2">
         {quickCategories.map((c) => (
           <Chip

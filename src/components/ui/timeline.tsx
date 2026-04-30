@@ -41,7 +41,9 @@ export function TimelineStep({
   title: string;
   description?: string;
   tone?: StepTone;
-  meta?: string;
+  // ReactNode so callers can render richer meta (e.g. time + an inline
+  // icon for tappable rows) instead of a plain timestamp string.
+  meta?: React.ReactNode;
   last?: boolean;
   delay?: number;
 }) {

@@ -2,9 +2,12 @@
 
 // InboxTabs — client-side All / Unread / Read filter over the same
 // notification list. Keeps the server-rendered groupings intact but
-// lets the user narrow focus without a round-trip.
+// lets the user narrow focus without a round-trip. Notifications that
+// carry a `requestId` render as deep-links to the matching request
+// detail page (e.g. "Tech is en route" → tap → request).
 
-import { Inbox as InboxIcon } from "lucide-react";
+import { ArrowUpRight, Inbox as InboxIcon } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,6 +19,7 @@ type Notification = {
   body: string;
   createdAt: string;
   isRead: boolean;
+  requestId: string | null;
 };
 
 type TabId = "all" | "unread" | "read";
@@ -128,20 +132,52 @@ export function InboxTabs({ notifications }: { notifications: Notification[] }) 
                 {bucket}
               </p>
               <Timeline>
-                {groups[bucket].map((item, i, arr) => (
-                  <TimelineStep
-                    key={item.id}
-                    title={item.title}
-                    description={item.body}
-                    tone={item.isRead ? "muted" : "royal"}
-                    last={i === arr.length - 1}
-                    meta={new Date(item.createdAt).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                    delay={0.04 * i}
-                  />
-                ))}
+                {groups[bucket].map((item, i, arr) => {
+                  const meta = new Date(item.createdAt).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
+                  // Deep-link the step into the related request when
+                  // we have one. Wrapping the step in a Link with
+                  // negative-margin click area keeps the visual
+                  // unchanged while making the whole row tappable —
+                  // and a small ↗ icon appears in the meta slot to
+                  // signal the affordance without adding a button.
+                  if (item.requestId) {
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/app/requests/${item.requestId}`}
+                        className="focus-ring -mx-2 block rounded-2xl px-2 transition-colors hover:bg-canvas-elevated"
+                      >
+                        <TimelineStep
+                          title={item.title}
+                          description={item.body}
+                          tone={item.isRead ? "muted" : "royal"}
+                          last={i === arr.length - 1}
+                          meta={
+                            <span className="inline-flex items-center gap-1">
+                              {meta}
+                              <ArrowUpRight className="h-3 w-3" aria-hidden />
+                            </span>
+                          }
+                          delay={0.04 * i}
+                        />
+                      </Link>
+                    );
+                  }
+                  return (
+                    <TimelineStep
+                      key={item.id}
+                      title={item.title}
+                      description={item.body}
+                      tone={item.isRead ? "muted" : "royal"}
+                      last={i === arr.length - 1}
+                      meta={meta}
+                      delay={0.04 * i}
+                    />
+                  );
+                })}
               </Timeline>
             </Card>
           ))

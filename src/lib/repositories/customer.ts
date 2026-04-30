@@ -21,6 +21,10 @@ export type CustomerNotification = {
   body: string;
   isRead: boolean;
   createdAt: string;
+  // Optional FK back to the service_request the notification refers to
+  // (nullable — some notifications are account-level, not request-level).
+  // Drives the inbox's deep-link affordance.
+  requestId: string | null;
 };
 
 export type CustomerBilling = {
@@ -95,9 +99,12 @@ export async function getCustomerSnapshot(
         .select("id, title, description, status, area, preferred_window, created_at, scheduled_for")
         .order("created_at", { ascending: false })
         .limit(20),
+      // notifications.request_id was added in migration 007 — apply
+      // that before deploying or this query will throw and the outer
+      // try/catch will degrade the whole snapshot to emptySnapshot().
       supabase
         .from("notifications")
-        .select("id, title, body, is_read, created_at")
+        .select("id, title, body, is_read, created_at, request_id")
         .order("created_at", { ascending: false })
         .limit(20),
       supabase
@@ -159,6 +166,7 @@ export async function getCustomerSnapshot(
           body: (n.body as string) ?? "",
           isRead: Boolean(n.is_read),
           createdAt: n.created_at as string,
+          requestId: ((n as { request_id?: string | null }).request_id as string) ?? null,
         })) ?? [],
       billing:
         (billRes.data ?? []).map((b) => ({
