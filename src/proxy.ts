@@ -1,4 +1,4 @@
-// Edge middleware — runs before every request. Does two things:
+// Edge proxy — runs before every request. Does two things:
 //
 //   1. Refreshes the Supabase session cookie so SSR pages see fresh
 //      auth state (otherwise access tokens can silently expire
@@ -6,15 +6,18 @@
 //
 //   2. Gates /app/* and /admin/* routes. Signed-out users get redirected
 //      to /sign-in?next=<original>. The role check itself happens in
-//      the page via requireRole() — this middleware just ensures there's
+//      the page via requireRole() — this proxy just ensures there's
 //      SOMEONE signed in.
+//
+// Renamed from `middleware` to `proxy` per Next 16's file-convention
+// rename (the old name still works but emits a deprecation warning).
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const GATED_PREFIXES = ["/app", "/admin"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: request.headers } });
 
   const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -35,7 +35,7 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
   const toast = useToast();
   const [loading, setLoading] = useState(false);
 
-  // Show any initial error (e.g., ?error=credentials from middleware) once.
+  // Show any initial error (e.g., ?error=credentials from proxy) once.
   // Uses the global toast system so the message is visible against our
   // dark hero backgrounds — the inline brick-soft banner used to vanish
   // against the navy wash, which broke login debugging.
@@ -88,7 +88,7 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
       // Role-aware redirect: let the server decide via /app landing.
       const target = nextPath && nextPath.startsWith("/") ? nextPath : "/app";
       router.replace(target);
-      // Force a server re-render so middleware sees the fresh cookie.
+      // Force a server re-render so the proxy sees the fresh cookie.
       router.refresh();
     } catch (err) {
       console.error("[sign-in]", err);
