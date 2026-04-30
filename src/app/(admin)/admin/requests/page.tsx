@@ -1,4 +1,5 @@
-import { ClipboardList } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -6,8 +7,28 @@ import { getAdminSnapshot } from "@/lib/repositories/admin";
 
 export const dynamic = "force-dynamic";
 
+// Order so the operator's eye lands on what needs attention first:
+// pending → under review → scheduled → everything else. Inside each
+// bucket the underlying snapshot already orders by created_at desc.
+const STATUS_PRIORITY: Record<string, number> = {
+  pending: 0,
+  "under review": 1,
+  scheduled: 2,
+  "technician assigned": 2,
+  "en route": 3,
+  arrived: 3,
+  completed: 4,
+  cancelled: 5,
+  "quoted separately": 5,
+};
+
 export default async function AdminRequestsPage() {
   const snap = await getAdminSnapshot();
+  const ordered = [...snap.requests].sort((a, b) => {
+    const pa = STATUS_PRIORITY[a.status.toLowerCase()] ?? 9;
+    const pb = STATUS_PRIORITY[b.status.toLowerCase()] ?? 9;
+    return pa - pb;
+  });
 
   return (
     <div className="space-y-6">
@@ -41,18 +62,40 @@ export default async function AdminRequestsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {snap.requests.map((r) => (
-                  <tr key={r.id} className="bg-surface transition hover:bg-canvas-elevated">
+                {ordered.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="cursor-pointer bg-surface transition hover:bg-canvas-elevated"
+                  >
+                    {/* Each cell wraps a Link so the entire row is one
+                        big tappable target without nesting <a> in a
+                        <tr> (browsers mishandle that). */}
                     <td className="px-5 py-4">
-                      <p className="font-semibold text-ink">{r.title}</p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {r.area} · {r.category}
-                      </p>
+                      <Link href={`/admin/requests/${r.id}`} className="focus-ring block">
+                        <p className="font-semibold text-ink">{r.title}</p>
+                        <p className="mt-0.5 text-xs text-ink-muted">
+                          {r.area} · {r.category}
+                        </p>
+                      </Link>
                     </td>
-                    <td className="px-5 py-4 text-ink-muted">{r.customerName}</td>
-                    <td className="px-5 py-4 text-ink-muted">{r.preferredWindow}</td>
+                    <td className="px-5 py-4 text-ink-muted">
+                      <Link href={`/admin/requests/${r.id}`} className="focus-ring block">
+                        {r.customerName}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4 text-ink-muted">
+                      <Link href={`/admin/requests/${r.id}`} className="focus-ring block">
+                        {r.preferredWindow}
+                      </Link>
+                    </td>
                     <td className="px-5 py-4">
-                      <StatusPill status={r.status} />
+                      <Link
+                        href={`/admin/requests/${r.id}`}
+                        className="focus-ring inline-flex items-center gap-2"
+                      >
+                        <StatusPill status={r.status} />
+                        <ArrowRight className="h-3.5 w-3.5 text-ink-subtle" aria-hidden />
+                      </Link>
                     </td>
                   </tr>
                 ))}
