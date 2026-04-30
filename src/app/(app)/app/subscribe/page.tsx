@@ -33,7 +33,7 @@ export default async function SubscribePage({
           One last thing: pick a plan.
         </h1>
         <p className="mt-4 max-w-xl text-sm leading-7 text-white/78">
-          Payment runs securely through Stripe. Your Fixpass access unlocks the moment the subscription
+          Payment runs securely through Stripe. Your Fixpass access goes live the moment the subscription
           is active — usually seconds after you return to this screen.
         </p>
         <div className="mt-6 flex items-center gap-3">
@@ -46,7 +46,7 @@ export default async function SubscribePage({
         <h2 className="display-section mt-2 text-2xl text-ink">Choose your plan</h2>
         <p className="mt-3 text-sm leading-6 text-ink-muted">
           Prepay 3, 6, or 12 months — longer terms lock in a better per-month rate. Plan changes
-          flow through Stripe's billing portal later.
+          flow through Stripe&apos;s billing portal later.
         </p>
 
         <div className="mt-6">

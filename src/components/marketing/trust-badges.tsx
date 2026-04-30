@@ -38,7 +38,7 @@ const badges = [
   {
     icon: CreditCard,
     title: "Cancel anytime",
-    copy: "Coverage continues through the prepaid term, then stops. No auto-renew surprises.",
+    copy: "Coverage runs to the end of your prepaid term, then stops. No surprise renewal charges.",
     tone: "basil" as const,
   },
 ];

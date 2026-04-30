@@ -29,10 +29,14 @@ function pieces(count: number) {
 export function WelcomeConfetti() {
   const [items, setItems] = useState<ReturnType<typeof pieces>>([]);
 
+  // Fire-once-on-mount animation. The lint rule prefers external-system
+  // sync; this is a one-shot effect gated on env (matchMedia + browser
+  // check), which is a legitimate exception.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(pieces(36));
     const t = setTimeout(() => setItems([]), 3500);
     return () => clearTimeout(t);

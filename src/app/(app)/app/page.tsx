@@ -1,4 +1,4 @@
-import { ArrowRight, CreditCard, Home, Inbox, PlusCircle, Wrench } from "lucide-react";
+import { ArrowRight, CreditCard, Home, Inbox, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

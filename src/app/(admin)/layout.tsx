@@ -1,19 +1,18 @@
-import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { getCurrentSession, homeForRole } from "@/lib/auth/session";
+import { requireRole } from "@/lib/auth/session";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getCurrentSession();
-  if (!session) redirect("/sign-in");
-  // Techs + admins share the /admin chrome with route-level gating below.
-  if (session.role === "customer") redirect(homeForRole(session.role));
+  // Every /admin/* route is admin-only. Customers get bounced to /app,
+  // techs to their tech home (or /sign-in if no session). Per-page
+  // requireRole calls are now defense-in-depth — no longer necessary
+  // for correctness.
+  //
+  // When a tech-specific portal exists, build it under a separate route
+  // group (e.g. (tech)/tech/...) rather than widening this layout.
+  const session = await requireRole("admin", "/admin");
 
   return (
-    <AdminShell
-      userName={session.name}
-      userEmail={session.email}
-      roleLabel={session.role === "admin" ? "Operations" : "Technician"}
-    >
+    <AdminShell userName={session.name} userEmail={session.email} roleLabel="Operations">
       {children}
     </AdminShell>
   );

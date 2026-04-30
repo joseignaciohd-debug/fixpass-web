@@ -48,8 +48,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>("system");
   const [resolved, setResolved] = useState<ResolvedTheme>("light");
 
+  // Hydrate from localStorage + system preference once on mount. SSR
+  // can't read these safely without a hydration mismatch, so a setState
+  // effect on mount is the pragmatic shape. The cleaner React 19 form
+  // (useSyncExternalStore) doesn't compose well here because the source
+  // is two stores (localStorage + matchMedia), and snapshot generation
+  // needs to be guarded against undefined window.
   useEffect(() => {
     const initialMode = readStoredMode();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setModeState(initialMode);
     setResolved(resolveMode(initialMode));
   }, []);

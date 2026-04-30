@@ -78,7 +78,7 @@ export default async function WelcomePage({
             <TimelineStep
               index="1"
               title="Register your property"
-              description="Address + access notes. Takes 60 seconds, unlocks accurate scheduling."
+              description="Address + access notes. Takes 60 seconds and lets us route the right tech to the right door."
               tone="royal"
             />
             <TimelineStep

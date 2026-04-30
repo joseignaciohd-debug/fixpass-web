@@ -96,8 +96,11 @@ export async function POST(request: Request) {
       case "customer.subscription.created":
       case "invoice.paid":
       case "invoice.payment_failed": {
-        // biome-ignore lint: casting to any lets us read both subscription + id fields
-        const obj = event.data.object as any;
+        // event.data.object is a Stripe.Subscription on subscription.*
+        // events and a Stripe.Invoice on invoice.* events. Both have
+        // either a .subscription field (invoice) or .id field
+        // (subscription) — narrowest shared shape we need.
+        const obj = event.data.object as { subscription?: string | null; id?: string };
         const subscriptionId = obj.subscription ?? obj.id;
         if (subscriptionId) await syncSubscription(admin, stripe, String(subscriptionId));
         break;

@@ -44,7 +44,7 @@ export async function saveProperty(input: unknown) {
     const payload = {
       customer_id: customer.id,
       nickname: parsed.data.nickname,
-      address_line1: parsed.data.addressLine1,
+      address_line_1: parsed.data.addressLine1,
       city: parsed.data.city,
       state: parsed.data.state.toUpperCase(),
       postal_code: parsed.data.postalCode,

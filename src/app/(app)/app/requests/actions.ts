@@ -96,11 +96,14 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
     // base request so the user flow isn't stuck.
     const photoPaths = parsed.data.photoPaths ?? [];
     if (photoPaths.length > 0 && data?.id) {
+      // service_request_photos schema: id, service_request_id,
+       // storage_path, photo_kind, created_at — uploader_id is not a
+       // column, so we drop it. The bucket RLS already pins the file
+       // path to auth.uid(), which serves the same audit purpose.
       const { error: photoErr } = await supabase.from("service_request_photos").insert(
         photoPaths.map((path) => ({
           service_request_id: data.id,
           storage_path: path,
-          uploaded_by: session.userId,
         })),
       );
       if (photoErr) {

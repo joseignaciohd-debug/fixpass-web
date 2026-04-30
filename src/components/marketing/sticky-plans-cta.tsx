@@ -7,7 +7,7 @@
 // with the hero.
 
 import { ArrowRight } from "lucide-react";
-import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useScroll } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_BILLING_CYCLE, planPerMonth, plans } from "@/lib/config/site-data";

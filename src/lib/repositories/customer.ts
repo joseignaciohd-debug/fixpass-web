@@ -83,7 +83,9 @@ export async function getCustomerSnapshot(
     if (!userRow) return emptySnapshot(fallback.name, fallback.email);
 
     // Best-effort reads — missing tables just yield nulls/empty arrays.
-    const [customerRes, subRes, propRes, reqRes, notifRes, billRes] = await Promise.all([
+    // The `customers` lookup runs to anchor RLS-scoped reads even though
+    // we don't surface the row directly in the snapshot.
+    const [, subRes, propRes, reqRes, notifRes, billRes] = await Promise.all([
       supabase.from("customers").select("id").eq("user_id", userRow.id).maybeSingle(),
       supabase
         .from("subscriptions")

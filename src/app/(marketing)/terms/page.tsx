@@ -33,9 +33,10 @@ export default function TermsPage() {
 
         <h2>Billing</h2>
         <p>
-          Billed monthly or annually through Stripe. Recurring charges run on the same day each cycle.
-          Cancel anytime from your account — coverage continues through the end of the paid period.
-          Refunds for partial months aren&apos;t automatic but ops will review unusual situations.
+          Memberships are prepaid through Stripe in 3, 6, or 12-month terms. The full term is charged
+          up front; coverage runs to the end of that term and stops unless you start a new one. Cancel
+          anytime from your account — your active term keeps running until it expires. Refunds for
+          partial terms aren&apos;t automatic, but ops will review unusual situations.
         </p>
 
         <h2>Scheduling</h2>
