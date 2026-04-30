@@ -29,7 +29,10 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
   try {
     const supabase = await getSupabaseServerClient();
 
-    // Look up the customer row tied to this user.
+    // Look up customer + their default property + active subscription.
+    // service_requests requires property_id + subscription_id (both
+    // non-nullable per schema), so all three lookups have to succeed
+    // before we can write the row.
     const { data: customer } = await supabase
       .from("customers")
       .select("id")
@@ -40,16 +43,48 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
       return { error: "No customer record yet — finish onboarding first." };
     }
 
+    const [{ data: property }, { data: subscription }] = await Promise.all([
+      supabase
+        .from("properties")
+        .select("id")
+        .eq("customer_id", customer.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("customer_id", customer.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (!property) {
+      return { error: "Add a property to your account before submitting a request." };
+    }
+    if (!subscription) {
+      return {
+        error:
+          "An active membership is required before submitting a request. Reactivate via the billing portal.",
+      };
+    }
+
+    // Column names per the canonical schema (types.ts):
+    //   request_status (not 'status'), internal_notes (not 'notes').
     const { data, error } = await supabase
       .from("service_requests")
       .insert({
         customer_id: customer.id,
+        property_id: property.id,
+        subscription_id: subscription.id,
         title: parsed.data.title,
         description: parsed.data.description,
         area: parsed.data.area || null,
         preferred_window: parsed.data.preferredWindow || null,
-        notes: parsed.data.notes || null,
-        status: "pending",
+        internal_notes: parsed.data.notes || null,
+        request_status: "pending",
       })
       .select("id")
       .single();

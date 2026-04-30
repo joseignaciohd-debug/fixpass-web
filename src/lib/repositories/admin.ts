@@ -88,7 +88,10 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       supabase
         .from("service_requests")
         .select(
-          "id, title, description, status, area, preferred_window, scheduled_for, notes, category",
+          // PostgREST aliasing — service_requests.status doesn't exist;
+          // canonical columns are request_status + internal_notes. Alias
+          // back so downstream readers keep using r.status / r.notes.
+          "id, title, description, status:request_status, area, preferred_window, scheduled_for, notes:internal_notes, category",
         )
         .order("created_at", { ascending: false })
         .limit(50),

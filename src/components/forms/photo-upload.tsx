@@ -17,7 +17,7 @@ export type UploadedPhoto = { path: string; previewUrl: string; name: string };
 
 export function PhotoUpload({
   userId,
-  bucket = "request-photos",
+  bucket = "service-request-photos",
   onChange,
 }: {
   userId: string;

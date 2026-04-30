@@ -93,10 +93,14 @@ export async function getCustomerSnapshot(
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
-      supabase.from("properties").select("nickname, address_line1, city, state, postal_code, home_type, access_notes").limit(1).maybeSingle(),
+      // address_line_1 (with underscore) is the canonical column.
+      // Alias to address_line1 so the consumer below keeps working.
+      supabase.from("properties").select("nickname, address_line1:address_line_1, city, state, postal_code, home_type, access_notes").limit(1).maybeSingle(),
+      // PostgREST aliasing — see admin.ts comment. service_requests.status
+      // is canonical name request_status; same for notes ↔ internal_notes.
       supabase
         .from("service_requests")
-        .select("id, title, description, status, area, preferred_window, created_at, scheduled_for")
+        .select("id, title, description, status:request_status, area, preferred_window, created_at, scheduled_for")
         .order("created_at", { ascending: false })
         .limit(20),
       // notifications.request_id was added in migration 007 — apply

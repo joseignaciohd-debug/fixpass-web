@@ -83,7 +83,7 @@ export async function confirmScheduling(input: z.infer<typeof confirmSchema>): P
 
   const { error: upErr } = await supabase
     .from("service_requests")
-    .update({ status: "scheduled", scheduled_for: scheduledIso })
+    .update({ request_status: "scheduled", scheduled_for: scheduledIso })
     .eq("id", parsed.data.requestId);
   if (upErr) return { error: upErr.message };
 
@@ -195,7 +195,7 @@ export async function markCompleted(input: z.infer<typeof completeSchema>): Prom
 
   const { error: upErr } = await supabase
     .from("service_requests")
-    .update({ status: "completed" })
+    .update({ request_status: "completed" })
     .eq("id", parsed.data.requestId);
   if (upErr) return { error: upErr.message };
 
@@ -223,7 +223,7 @@ export async function cancelRequest(input: z.infer<typeof cancelSchema>): Promis
 
   const { error: upErr } = await supabase
     .from("service_requests")
-    .update({ status: "cancelled" })
+    .update({ request_status: "cancelled" })
     .eq("id", parsed.data.requestId);
   if (upErr) return { error: upErr.message };
 
@@ -254,7 +254,7 @@ export async function markReviewed(input: z.infer<typeof reviewedSchema>): Promi
 
   const { error: upErr } = await supabase
     .from("service_requests")
-    .update({ status: "under review" })
+    .update({ request_status: "under review" })
     .eq("id", parsed.data.requestId);
   if (upErr) return { error: upErr.message };
 

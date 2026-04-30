@@ -86,7 +86,9 @@ export default async function AdminRequestDetailPage({
       const { data: row } = await supabase
         .from("service_requests")
         .select(
-          "id, title, description, status, area, preferred_window, scheduled_for, created_at, notes, customer_id",
+          // Alias from canonical column names (request_status / internal_notes)
+          // back to the friendlier ones the rest of this file already uses.
+          "id, title, description, status:request_status, area, preferred_window, scheduled_for, created_at, notes:internal_notes, customer_id",
         )
         .eq("id", id)
         .maybeSingle();
@@ -125,8 +127,10 @@ export default async function AdminRequestDetailPage({
               .maybeSingle(),
             supabase
               .from("properties")
-              .select("nickname, address_line1, city, state, postal_code, access_notes")
-              .eq("user_id", cu.user_id)
+              // properties uses customer_id (not user_id) and
+              // address_line_1 with an underscore.
+              .select("nickname, address_line1:address_line_1, city, state, postal_code, access_notes")
+              .eq("customer_id", req?.customerId ?? "")
               .maybeSingle(),
           ]);
           if (user) {

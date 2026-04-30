@@ -87,7 +87,11 @@ export default async function RequestDetailPage({
     try {
       const { data: row } = await supabase
         .from("service_requests")
-        .select("id, title, description, status, area, preferred_window, scheduled_for, created_at, notes")
+        .select(
+          // status / notes don't exist as bare columns on service_requests
+          // — alias from request_status / internal_notes via PostgREST.
+          "id, title, description, status:request_status, area, preferred_window, scheduled_for, created_at, notes:internal_notes",
+        )
         .eq("id", id)
         .maybeSingle();
       if (row) {
