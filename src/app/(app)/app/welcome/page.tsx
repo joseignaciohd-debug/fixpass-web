@@ -1,5 +1,6 @@
 import { ArrowRight, CheckCircle2, ClipboardList, Home, KeyRound, MapPin, Wrench } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { BalancedHeading } from "@/components/ui/balanced-heading";
 import { BlindsReveal } from "@/components/ui/blinds-reveal";
@@ -24,8 +25,16 @@ export default async function WelcomePage({
 }: {
   searchParams: Promise<{ session_id?: string }>;
 }) {
-  const session = (await getCurrentSession())!;
   const { session_id } = await searchParams;
+  const session = await getCurrentSession();
+  // If the Supabase cookie went stale during the Stripe round-trip,
+  // the layout's session check might have refreshed it but this page's
+  // read can still come back null. Bounce through sign-in and preserve
+  // the welcome URL so the user lands back here once re-authenticated.
+  if (!session) {
+    const next = session_id ? `/app/welcome?session_id=${session_id}` : "/app/welcome";
+    redirect(`/sign-in?next=${encodeURIComponent(next)}`);
+  }
   const firstName = session.name.split(/\s+/)[0] || session.name;
 
   return (
