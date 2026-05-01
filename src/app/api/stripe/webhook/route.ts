@@ -159,9 +159,25 @@ async function syncSubscription(
     return;
   }
 
-  // Resolve customer_id from metadata if present, else via stripe_customer_id
-  // on an existing subscription row.
+  // Resolve customer_id, in this order:
+  //   1. metadata.customer_id (rarely set today)
+  //   2. customers.user_id matching the auth user we attached at checkout
+  //   3. subscriptions.stripe_customer_id from a prior sub
+  //   4. Auto-create a customers row keyed to the auth user — covers
+  //      first-time payers whose customer record was never provisioned.
+  // Without (2) and (4) the very first checkout for any new user
+  // would silently bail out and the user would never be activated.
+  const userId = metadata.user_id as string | undefined;
   let customerId = metadata.customer_id as string | undefined;
+
+  if (!customerId && userId) {
+    const { data: customer } = await admin
+      .from("customers")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    customerId = (customer?.id as string | undefined) ?? undefined;
+  }
   if (!customerId) {
     const { data: existing } = await admin
       .from("subscriptions")
@@ -172,8 +188,23 @@ async function syncSubscription(
       .maybeSingle();
     customerId = (existing?.customer_id as string | undefined) ?? undefined;
   }
+  if (!customerId && userId) {
+    const { data: created, error: createErr } = await admin
+      .from("customers")
+      .insert({ user_id: userId })
+      .select("id")
+      .maybeSingle();
+    if (createErr) {
+      console.error("[stripe webhook] failed to auto-create customer row", {
+        userId,
+        error: createErr.message,
+      });
+    } else {
+      customerId = (created?.id as string | undefined) ?? undefined;
+    }
+  }
   if (!customerId) {
-    console.warn("[stripe webhook] cannot resolve customer_id", { stripeCustomerId });
+    console.warn("[stripe webhook] cannot resolve customer_id", { stripeCustomerId, userId });
     return;
   }
 
@@ -191,8 +222,8 @@ async function syncSubscription(
     .eq("code", planCode)
     .maybeSingle();
 
-  if (!property?.id || !plan?.id) {
-    console.warn("[stripe webhook] missing property or plan row");
+  if (!plan?.id) {
+    console.warn("[stripe webhook] missing membership_plans row", { planCode });
     return;
   }
 
@@ -215,9 +246,11 @@ async function syncSubscription(
     .neq("stripe_subscription_id", subscriptionId)
     .eq("status", "active");
 
-  const payload = {
+  // property_id is included only when the customer has registered a
+  // property. New members typically pay before adding their address,
+  // so this is allowed to be null on first activation.
+  const payload: Record<string, unknown> = {
     customer_id: customerId,
-    property_id: property.id,
     membership_plan_id: plan.id,
     status,
     billing_cycle: billingCycle,
@@ -227,6 +260,7 @@ async function syncSubscription(
     current_period_end: currentPeriodEnd,
     cancel_at_period_end: sub.cancel_at_period_end,
   };
+  if (property?.id) payload.property_id = property.id;
 
   const { data: existing } = await admin
     .from("subscriptions")
