@@ -1,12 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { PropertyForm } from "@/components/forms/property-form";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
 export const dynamic = "force-dynamic";
 
 export default async function PropertyPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/property");
   const snapshot = await getCustomerSnapshot(session.userId, { name: session.name, email: session.email });
 
   return (

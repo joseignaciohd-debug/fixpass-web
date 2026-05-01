@@ -11,14 +11,14 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { defaultRules } from "@/lib/config/site-data";
 import { TECHNICIANS } from "@/lib/config/technicians";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/admin/settings");
   const integrations = readIntegrations();
 
   return (

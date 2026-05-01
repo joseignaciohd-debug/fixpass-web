@@ -76,19 +76,37 @@ export async function POST(request: Request) {
         const s = event.data.object as Stripe.Checkout.Session;
         const subscriptionId = typeof s.subscription === "string" ? s.subscription : s.subscription?.id;
         const sessionId = s.id;
-        // client_reference_id is the auth user id we set at checkout creation.
-        const userId = (s.client_reference_id ?? (s.metadata?.user_id as string | undefined)) ?? "";
+        // client_reference_id is set at checkout creation to session.userId,
+        // which is the public.users.id (not the auth.users.id). The
+        // payment_events table FKs to auth.users(id) and the matching
+        // RLS policy compares against auth.uid(), so we have to resolve
+        // the auth_user_id here before inserting — otherwise Postgres
+        // rejects the row and the welcome screen's Realtime listener
+        // never fires.
+        const publicUserId = (s.client_reference_id ?? (s.metadata?.user_id as string | undefined)) ?? "";
 
         if (subscriptionId) {
           await syncSubscription(admin, stripe, subscriptionId);
         }
-        if (sessionId && userId) {
-          await admin.from("payment_events").insert({
-            user_id: userId,
-            session_id: sessionId,
-            event_type: event.type,
-            status: "succeeded",
-          });
+        if (sessionId && publicUserId) {
+          const { data: userRow } = await admin
+            .from("users")
+            .select("auth_user_id")
+            .eq("id", publicUserId)
+            .maybeSingle();
+          const authUserId = (userRow?.auth_user_id as string | undefined) ?? null;
+          if (authUserId) {
+            await admin.from("payment_events").insert({
+              user_id: authUserId,
+              session_id: sessionId,
+              event_type: event.type,
+              status: "succeeded",
+            });
+          } else {
+            console.warn("[stripe webhook] cannot resolve auth_user_id for payment_events", {
+              publicUserId,
+            });
+          }
         }
         break;
       }

@@ -4,13 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusPill } from "@/components/ui/status-pill";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
 export const dynamic = "force-dynamic";
 
 export default async function RequestsListPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/requests");
   const snapshot = await getCustomerSnapshot(session.userId, { name: session.name, email: session.email });
 
   return (

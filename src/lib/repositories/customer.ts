@@ -82,22 +82,39 @@ export async function getCustomerSnapshot(
 
     if (!userRow) return emptySnapshot(fallback.name, fallback.email);
 
-    // Best-effort reads — missing tables just yield nulls/empty arrays.
-    // The `customers` lookup runs to anchor RLS-scoped reads even though
-    // we don't surface the row directly in the snapshot.
-    const [, subRes, propRes, reqRes, notifRes, billRes] = await Promise.all([
-      supabase.from("customers").select("id").eq("user_id", userRow.id).maybeSingle(),
-      supabase
-        .from("subscriptions")
-        .select(
-          "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
-        )
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+    // Resolve the customer row first so subsequent queries can scope
+    // explicitly. Without this filter, subscriptions/properties would
+    // return whatever row RLS allowed first, which is the right one
+    // under prod policies but a footgun under any service-role caller.
+    const { data: customerRow } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", userRow.id)
+      .maybeSingle();
+    const customerId = customerRow?.id as string | undefined;
+
+    const [subRes, propRes, reqRes, notifRes, billRes] = await Promise.all([
+      customerId
+        ? supabase
+            .from("subscriptions")
+            .select(
+              "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
+            )
+            .eq("customer_id", customerId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
       // address_line_1 (with underscore) is the canonical column.
       // Alias to address_line1 so the consumer below keeps working.
-      supabase.from("properties").select("nickname, address_line1:address_line_1, city, state, postal_code, home_type, access_notes").limit(1).maybeSingle(),
+      customerId
+        ? supabase
+            .from("properties")
+            .select("nickname, address_line1:address_line_1, city, state, postal_code, home_type, access_notes")
+            .eq("customer_id", customerId)
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
       // PostgREST aliasing — see admin.ts comment. service_requests.status
       // is canonical name request_status; same for notes ↔ internal_notes.
       supabase

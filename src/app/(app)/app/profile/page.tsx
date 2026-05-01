@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { SectionGroup } from "@/components/ui/section-group";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/profile");
   const snapshot = await getCustomerSnapshot(session.userId, { name: session.name, email: session.email });
 
   return (

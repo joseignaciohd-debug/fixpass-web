@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { StatRing } from "@/components/ui/stat-ring";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 import { DEFAULT_BILLING_CYCLE, plans, planPerMonth, planPrice } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { currency } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function MembershipPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/membership");
   const snapshot = await getCustomerSnapshot(session.userId, { name: session.name, email: session.email });
 
   const subscription = snapshot.subscription;

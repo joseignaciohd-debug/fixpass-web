@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { NewRequestForm } from "@/components/forms/new-request-form";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewRequestPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/requests/new");
 
   // Pre-emptive subscription gate — bounce members without a paid plan
   // to /plans BEFORE the form renders, so they don't fill it out only

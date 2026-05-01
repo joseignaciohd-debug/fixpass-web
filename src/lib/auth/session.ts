@@ -52,15 +52,27 @@ export async function getCurrentSession(): Promise<AppSession | null> {
 }
 
 /**
- * Enforce a role on a page. Redirects to /sign-in if signed out,
- * or to the user's home if they have the wrong role.
+ * Enforce that a session exists. Redirects to /sign-in if not.
+ * Use in server components instead of `(await getCurrentSession())!`
+ * — the bang assertion crashes the page with a 500 if Supabase
+ * returns null (stale cookies, race with the layout's own auth read,
+ * etc.); this redirects cleanly instead.
  */
-export async function requireRole(role: Role, nextPath?: string): Promise<AppSession> {
+export async function requireSession(nextPath?: string): Promise<AppSession> {
   const session = await getCurrentSession();
   if (!session) {
     const qs = nextPath ? `?next=${encodeURIComponent(nextPath)}` : "";
     redirect(`/sign-in${qs}`);
   }
+  return session;
+}
+
+/**
+ * Enforce a role on a page. Redirects to /sign-in if signed out,
+ * or to the user's home if they have the wrong role.
+ */
+export async function requireRole(role: Role, nextPath?: string): Promise<AppSession> {
+  const session = await requireSession(nextPath);
   if (session.role !== role) {
     redirect(homeForRole(session.role));
   }

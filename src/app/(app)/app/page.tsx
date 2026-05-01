@@ -8,7 +8,7 @@ import { IconTile } from "@/components/ui/icon-tile";
 import { StatRing } from "@/components/ui/stat-ring";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Timeline, TimelineStep } from "@/components/ui/timeline";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
 // Dashboard — mirrors the mobile home tab. Greeting hero with visits
@@ -17,8 +17,7 @@ import { getCustomerSnapshot } from "@/lib/repositories/customer";
 export const dynamic = "force-dynamic";
 
 export default async function CustomerDashboardPage() {
-  // Layout guarantees session + customer role.
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app");
   const snapshot = await getCustomerSnapshot(session.userId, {
     name: session.name,
     email: session.email,

@@ -13,7 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 // real form work happens.
 
 export default async function MemberSettingsPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/settings");
   const snap = await getCustomerSnapshot(session.userId, {
     name: session.name,
     email: session.email,

@@ -2,13 +2,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
 import { MarkAllReadButton } from "@/components/inbox/mark-all-read-button";
-import { getCurrentSession } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { getCustomerSnapshot } from "@/lib/repositories/customer";
 
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const session = (await getCurrentSession())!;
+  const session = await requireSession("/app/inbox");
   const snapshot = await getCustomerSnapshot(session.userId, { name: session.name, email: session.email });
 
   const unread = snapshot.notifications.filter((n) => !n.isRead).length;
