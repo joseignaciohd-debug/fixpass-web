@@ -80,12 +80,15 @@ function SubscribeCard({
         body: new FormData(e.currentTarget),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.url) {
-        setError(data?.error ?? "Could not start checkout.");
-        setSubmitting(false);
+      // 401 → route returns { url: "/sign-in" }. Treat any url in the
+      // response as a navigation target (Stripe on success, /sign-in
+      // when the session expired).
+      if (data?.url) {
+        window.location.href = data.url;
         return;
       }
-      window.location.href = data.url;
+      setError(data?.error ?? `Could not start checkout (${res.status}).`);
+      setSubmitting(false);
     } catch {
       setError("Network error. Try again.");
       setSubmitting(false);
