@@ -62,8 +62,35 @@ function SubscribeCard({
   preselected?: boolean;
 }) {
   const [cycle, setCycle] = useState<BillingCycleId>(initialCycle ?? DEFAULT_BILLING_CYCLE);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isPlatinum = plan.id === "platinum";
   const isGold = plan.id === "gold";
+
+  async function handleCheckout(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        // Tell the route we want JSON — without this, it 303s us to Stripe
+        // (the path used by native form POSTs that fire before hydration).
+        headers: { Accept: "application/json" },
+        body: new FormData(e.currentTarget),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.url) {
+        setError(data?.error ?? "Could not start checkout.");
+        setSubmitting(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Network error. Try again.");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div
@@ -127,17 +154,23 @@ function SubscribeCard({
         })}
       </div>
 
-      <form action="/api/billing/checkout" method="post" className="mt-5">
+      <form onSubmit={handleCheckout} className="mt-5">
         <input type="hidden" name="planId" value={plan.id} />
         <input type="hidden" name="billingCycle" value={cycle} />
         <Button
           type="submit"
           variant={isPlatinum ? "inverse" : "primary"}
           fullWidth
+          disabled={submitting}
           iconLeft={<CreditCard className="h-4 w-4" />}
         >
-          Continue · {currency(planPrice(plan, cycle))}
+          {submitting ? "Loading…" : `Continue · ${currency(planPrice(plan, cycle))}`}
         </Button>
+        {error ? (
+          <p className={`mt-2 text-xs ${isPlatinum ? "text-white/80" : "text-red-600"}`}>
+            {error}
+          </p>
+        ) : null}
       </form>
     </div>
   );

@@ -32,25 +32,42 @@ const PRICE_MAP: Record<string, Record<string, string | undefined>> = {
 const VALID_CYCLES = new Set(["3mo", "6mo", "1yr"]);
 
 export async function POST(request: Request) {
+  // Native form POSTs (pre-hydration on Mobile Safari) can't parse a JSON
+  // response and end up showing a "download" prompt. So we route by Accept:
+  // JS callers send `Accept: application/json` and get JSON; everything else
+  // gets a 303 redirect that the browser follows natively to Stripe.
+  const wantsJson = request.headers.get("accept")?.includes("application/json") ?? false;
+  const origin = new URL(request.url).origin;
+  const fail = (status: number, error: string, redirectPath: string) =>
+    wantsJson
+      ? NextResponse.json({ error }, { status })
+      : NextResponse.redirect(`${origin}${redirectPath}`, 303);
+
   const session = await getCurrentSession();
-  if (!session) return NextResponse.redirect(new URL("/sign-in", request.url), { status: 303 });
+  if (!session) {
+    return wantsJson
+      ? NextResponse.json({ url: "/sign-in" }, { status: 401 })
+      : NextResponse.redirect(`${origin}/sign-in`, 303);
+  }
 
   // 10 checkout attempts per user per hour — more than enough for legit
   // users, blocks abuse. Keyed on user id so shared-IP office networks
   // don't hit each other's limits.
   const rl = rateLimit(`checkout:${session.userId}`, { max: 10, windowMs: 60 * 60 * 1000 });
   if (!rl.ok) {
-    return NextResponse.json(
-      { error: "Too many checkout attempts. Wait a moment and try again." },
-      { status: 429 },
+    return fail(
+      429,
+      "Too many checkout attempts. Wait a moment and try again.",
+      "/app/subscribe?error=rate-limited",
     );
   }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
-    return NextResponse.json(
-      { error: "Stripe is not configured yet. Ask ops to finish setup." },
-      { status: 503 },
+    return fail(
+      503,
+      "Stripe is not configured yet. Ask ops to finish setup.",
+      "/app/subscribe?error=stripe-unavailable",
     );
   }
 
@@ -58,15 +75,14 @@ export async function POST(request: Request) {
   const planId = String(form.get("planId") ?? "");
   const billingCycle = String(form.get("billingCycle") ?? "1yr");
   if (!VALID_CYCLES.has(billingCycle)) {
-    return NextResponse.json({ error: "Unknown billing cycle." }, { status: 400 });
+    return fail(400, "Unknown billing cycle.", "/app/subscribe?error=bad-cycle");
   }
   const priceId = PRICE_MAP[planId]?.[billingCycle];
   if (!priceId) {
-    return NextResponse.json({ error: "Unknown plan / cycle." }, { status: 400 });
+    return fail(400, "Unknown plan / cycle.", "/app/subscribe?error=bad-plan");
   }
 
   const stripe = new Stripe(stripeKey);
-  const origin = new URL(request.url).origin;
 
   const checkout = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -93,8 +109,10 @@ export async function POST(request: Request) {
   });
 
   if (!checkout.url) {
-    return NextResponse.json({ error: "Stripe returned no checkout URL." }, { status: 502 });
+    return fail(502, "Stripe returned no checkout URL.", "/app/subscribe?error=stripe-no-url");
   }
 
-  return NextResponse.redirect(checkout.url, { status: 303 });
+  return wantsJson
+    ? NextResponse.json({ url: checkout.url })
+    : NextResponse.redirect(checkout.url, 303);
 }
