@@ -28,6 +28,8 @@ const initialErrorMap: Record<string, string> = {
   credentials: "The email or password did not match a Fixpass account.",
   role: "This account is authenticated but not linked to a Fixpass role yet.",
   config: "Sign-in is not configured correctly. Try again or contact support.",
+  confirm_invalid: "That confirmation link is missing or malformed. Try signing in or request a new confirmation.",
+  confirm_expired: "That confirmation link has expired or was already used. Sign in to request a new one.",
 };
 
 export function SignInForm({ nextPath, initialError }: { nextPath?: string; initialError?: string }) {

@@ -11,7 +11,7 @@ import {
   Home,
   Inbox,
   LogOut,
-  User,
+  Settings,
   Wrench,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
@@ -19,12 +19,16 @@ import { FixpassWordmark } from "@/components/ui/brand-mark";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
+// Settings consolidates Profile + Property + Membership behind one
+// nav entry. Profile remains directly reachable at /app/profile and
+// is linked from /app/settings; pulling it out of the sidebar keeps
+// the bottom-bar layout breathable on mobile.
 const nav = [
   { href: "/app", label: "Home", icon: Home, exact: true },
   { href: "/app/requests", label: "Requests", icon: Wrench },
   { href: "/app/inbox", label: "Inbox", icon: Inbox },
   { href: "/app/membership", label: "Membership", icon: Crown },
-  { href: "/app/profile", label: "Profile", icon: User },
+  { href: "/app/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell({

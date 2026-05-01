@@ -1,13 +1,53 @@
+import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { NewRequestForm } from "@/components/forms/new-request-form";
 import { getCurrentSession } from "@/lib/auth/session";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewRequestPage() {
-  // Layout already gates on session; re-reading here gives us the auth
-  // user id needed to namespace photo uploads in Storage.
   const session = (await getCurrentSession())!;
+
+  // Pre-emptive subscription gate — bounce members without a paid plan
+  // to /plans BEFORE the form renders, so they don't fill it out only
+  // to fail at submit. Mirrors the validation in createServiceRequest;
+  // this is the front-line check, the action is the safety net.
+  //
+  // Accepts status in ('active','trialing'). 'active' covers Stripe-
+  // confirmed members; 'trialing' covers a future free-trial case.
+  // Cancelled / past_due / paused / incomplete all bounce.
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", session.userId)
+      .maybeSingle();
+
+    if (!customer) {
+      // No customer row → onboarding incomplete, send to welcome.
+      redirect("/app/welcome");
+    }
+
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("status")
+      .eq("customer_id", customer.id)
+      .in("status", ["active", "trialing"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!sub) {
+      redirect("/plans?intent=new-request");
+    }
+  } catch (err) {
+    // Don't swallow Next's redirect signal — re-throw so the redirect
+    // actually fires. Other errors (DB unreachable etc.) fall through
+    // to render the form and rely on the action gate as backup.
+    if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
+  }
 
   return (
     <div className="space-y-6">
