@@ -84,29 +84,48 @@ export async function POST(request: Request) {
 
   const stripe = new Stripe(stripeKey);
 
-  const checkout = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    allow_promotion_codes: true,
-    success_url: `${origin}/app/welcome?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/app/subscribe?checkout=cancelled`,
-    // client_reference_id lets the webhook write a payment_events row
-    // so the app can unlock immediately via Supabase Realtime.
-    client_reference_id: session.userId,
-    metadata: {
-      user_id: session.userId,
-      plan_code: planId,
-      billing_cycle: billingCycle,
-    },
-    subscription_data: {
+  let checkout;
+  try {
+    checkout = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,
+      success_url: `${origin}/app/welcome?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/app/subscribe?checkout=cancelled`,
+      // client_reference_id lets the webhook write a payment_events row
+      // so the app can unlock immediately via Supabase Realtime.
+      client_reference_id: session.userId,
       metadata: {
         user_id: session.userId,
         plan_code: planId,
         billing_cycle: billingCycle,
       },
-    },
-    customer_email: session.email,
-  });
+      subscription_data: {
+        metadata: {
+          user_id: session.userId,
+          plan_code: planId,
+          billing_cycle: billingCycle,
+        },
+      },
+      customer_email: session.email,
+    });
+  } catch (err) {
+    // Stripe.checkout.sessions.create can throw for archived/wrong-mode
+    // prices, key/account mismatches, etc. Log the full error to Vercel
+    // logs and surface a concise message to the client so we can see
+    // exactly what's wrong instead of a generic 500.
+    const e = err as { message?: string; code?: string; type?: string };
+    console.error("[checkout] stripe.checkout.sessions.create failed", {
+      message: e.message,
+      code: e.code,
+      type: e.type,
+      planId,
+      billingCycle,
+      priceId,
+    });
+    const detail = e.code ? `${e.code}: ${e.message ?? "unknown"}` : (e.message ?? "unknown error");
+    return fail(502, `Stripe rejected checkout — ${detail}`, "/app/subscribe?error=stripe-rejected");
+  }
 
   if (!checkout.url) {
     return fail(502, "Stripe returned no checkout URL.", "/app/subscribe?error=stripe-no-url");
