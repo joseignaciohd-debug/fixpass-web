@@ -31,14 +31,28 @@ async function checkUrl(url: string, timeoutMs = 3000): Promise<CheckResult> {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
-  const checks: Record<string, CheckResult | "skipped"> = {
-    supabase: supabaseUrl ? await checkUrl(`${supabaseUrl}/rest/v1/`) : "skipped",
-    stripe: await checkUrl("https://api.stripe.com/healthcheck"),
-  };
+  // Detailed `features` map and `checks` results are reconnaissance
+  // gifts on a public endpoint — they tell an attacker exactly which
+  // integrations are wired and which env vars are missing. Gate them
+  // behind a shared secret header (or local/non-prod env) so the
+  // response stays useful for ops without leaking config to the world.
+  const adminHeader = request.headers.get("x-health-secret");
+  const adminSecret = process.env.HEALTH_ADMIN_SECRET;
+  const isAdmin =
+    Boolean(adminSecret) && adminHeader !== null && adminHeader === adminSecret;
+  const isLocal = process.env.NODE_ENV !== "production";
+  const showDetail = isAdmin || isLocal;
+
+  const checks: Record<string, CheckResult | "skipped"> = showDetail
+    ? {
+        supabase: supabaseUrl ? await checkUrl(`${supabaseUrl}/rest/v1/`) : "skipped",
+        stripe: await checkUrl("https://api.stripe.com/healthcheck"),
+      }
+    : {};
 
   const anyDown = Object.values(checks).some((c) => c !== "skipped" && !c.ok);
 
@@ -49,26 +63,30 @@ export async function GET() {
       version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
       region: process.env.VERCEL_REGION ?? "local",
       runtime: "edge",
-      features: {
-        supabase: Boolean(supabaseUrl),
-        sentry: Boolean(sentryDsn),
-        posthog: Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY),
-        stripe: Boolean(process.env.STRIPE_SECRET_KEY),
-        stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
-        stripePrices: {
-          silver3mo: Boolean(process.env.STRIPE_PRICE_SILVER_3MO),
-          silver6mo: Boolean(process.env.STRIPE_PRICE_SILVER_6MO),
-          silver1yr: Boolean(process.env.STRIPE_PRICE_SILVER_1YR),
-          gold3mo: Boolean(process.env.STRIPE_PRICE_GOLD_3MO),
-          gold6mo: Boolean(process.env.STRIPE_PRICE_GOLD_6MO),
-          gold1yr: Boolean(process.env.STRIPE_PRICE_GOLD_1YR),
-          platinum3mo: Boolean(process.env.STRIPE_PRICE_PLATINUM_3MO),
-          platinum6mo: Boolean(process.env.STRIPE_PRICE_PLATINUM_6MO),
-          platinum1yr: Boolean(process.env.STRIPE_PRICE_PLATINUM_1YR),
-        },
-        resend: Boolean(process.env.RESEND_API_KEY),
-      },
-      checks,
+      ...(showDetail
+        ? {
+            features: {
+              supabase: Boolean(supabaseUrl),
+              sentry: Boolean(sentryDsn),
+              posthog: Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY),
+              stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+              stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+              stripePrices: {
+                silver3mo: Boolean(process.env.STRIPE_PRICE_SILVER_3MO),
+                silver6mo: Boolean(process.env.STRIPE_PRICE_SILVER_6MO),
+                silver1yr: Boolean(process.env.STRIPE_PRICE_SILVER_1YR),
+                gold3mo: Boolean(process.env.STRIPE_PRICE_GOLD_3MO),
+                gold6mo: Boolean(process.env.STRIPE_PRICE_GOLD_6MO),
+                gold1yr: Boolean(process.env.STRIPE_PRICE_GOLD_1YR),
+                platinum3mo: Boolean(process.env.STRIPE_PRICE_PLATINUM_3MO),
+                platinum6mo: Boolean(process.env.STRIPE_PRICE_PLATINUM_6MO),
+                platinum1yr: Boolean(process.env.STRIPE_PRICE_PLATINUM_1YR),
+              },
+              resend: Boolean(process.env.RESEND_API_KEY),
+            },
+            checks,
+          }
+        : {}),
     },
     {
       // Always 200 — uptime monitors parse the JSON `status` field.

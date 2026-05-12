@@ -34,8 +34,14 @@ const securityHeaders = [
     value: "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
   },
   {
+    // `preload` is intentionally omitted. The preload directive opts
+    // getfixpass.com into Chrome's HSTS preload list — a one-way
+    // commitment that every current AND future subdomain must serve
+    // valid HTTPS, with ~6 months minimum to revert. Add `preload`
+    // back only after deliberately deciding to submit the apex to
+    // hstspreload.org and confirming all current subdomains are HTTPS.
     key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
+    value: "max-age=63072000; includeSubDomains",
   },
   { key: "Content-Security-Policy", value: CSP_DIRECTIVES },
   { key: "X-DNS-Prefetch-Control", value: "on" },

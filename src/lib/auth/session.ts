@@ -142,7 +142,12 @@ export function homeForRole(role: Role): string {
     case "admin":
       return "/admin";
     case "technician":
-      return "/admin/schedule";
+      // Was "/admin/schedule" — but that route is gated by the admin
+      // layout's requireRole("admin"), which redirects non-admins
+      // back through homeForRole(role) and creates an infinite loop
+      // for every technician sign-in. /tech is a standalone route
+      // outside any role-gated layout.
+      return "/tech";
     default:
       return "/app";
   }

@@ -52,6 +52,54 @@ async function insertEvent(args: {
   return { id: data?.id as string };
 }
 
+// Resolve the auth.users.id for the member on a service_request and
+// insert a notifications row so the change shows up in /app/inbox.
+// Non-fatal: if any hop fails, we just skip the notification — the
+// admin action still completes and the member can still see the
+// status update via the per-request timeline.
+async function notifyRequester(args: {
+  requestId: string;
+  title: string;
+  body: string;
+}): Promise<void> {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: req } = await supabase
+      .from("service_requests")
+      .select("customer_id")
+      .eq("id", args.requestId)
+      .maybeSingle();
+    const customerId = req?.customer_id as string | undefined;
+    if (!customerId) return;
+
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("user_id")
+      .eq("id", customerId)
+      .maybeSingle();
+    const publicUserId = customer?.user_id as string | undefined;
+    if (!publicUserId) return;
+
+    const { data: user } = await supabase
+      .from("users")
+      .select("auth_user_id")
+      .eq("id", publicUserId)
+      .maybeSingle();
+    const authUserId = user?.auth_user_id as string | undefined;
+    if (!authUserId) return;
+
+    await supabase.from("notifications").insert({
+      user_id: authUserId,
+      title: args.title,
+      body: args.body,
+      is_read: false,
+      request_id: args.requestId,
+    });
+  } catch (err) {
+    console.warn("[admin/notifyRequester] skipped", err);
+  }
+}
+
 function revalidateRequest(id: string) {
   revalidatePath(`/admin/requests/${id}`);
   revalidatePath(`/admin/requests`);
@@ -102,6 +150,12 @@ export async function confirmScheduling(input: z.infer<typeof confirmSchema>): P
   });
   if (evt.error) return { error: evt.error };
 
+  await notifyRequester({
+    requestId: parsed.data.requestId,
+    title: "Visit scheduled",
+    body: `${tech.name} is booked for ${new Date(scheduledIso).toLocaleString()}.`,
+  });
+
   revalidateRequest(parsed.data.requestId);
   return { ok: true, eventId: evt.id };
 }
@@ -127,6 +181,12 @@ export async function proposeAlternateWindow(input: z.infer<typeof proposeSchema
     metadata: { kind: "scheduling_proposal", proposal: parsed.data.proposal },
   });
   if (evt.error) return { error: evt.error };
+
+  await notifyRequester({
+    requestId: parsed.data.requestId,
+    title: "New scheduling proposal",
+    body: parsed.data.proposal,
+  });
 
   revalidateRequest(parsed.data.requestId);
   return { ok: true, eventId: evt.id };
@@ -178,6 +238,12 @@ export async function markEnRoute(input: z.infer<typeof enRouteSchema>): Promise
   });
   if (evt.error) return { error: evt.error };
 
+  await notifyRequester({
+    requestId: parsed.data.requestId,
+    title: `${tech.name} is on the way`,
+    body: parsed.data.eta?.trim() ? `ETA ${parsed.data.eta.trim()}.` : "Heading to your address.",
+  });
+
   revalidateRequest(parsed.data.requestId);
   return { ok: true, eventId: evt.id };
 }
@@ -206,6 +272,12 @@ export async function markCompleted(input: z.infer<typeof completeSchema>): Prom
   });
   if (evt.error) return { error: evt.error };
 
+  await notifyRequester({
+    requestId: parsed.data.requestId,
+    title: "Visit complete",
+    body: parsed.data.summary,
+  });
+
   revalidateRequest(parsed.data.requestId);
   return { ok: true, eventId: evt.id };
 }
@@ -233,6 +305,12 @@ export async function cancelRequest(input: z.infer<typeof cancelSchema>): Promis
     body: parsed.data.reason,
   });
   if (evt.error) return { error: evt.error };
+
+  await notifyRequester({
+    requestId: parsed.data.requestId,
+    title: "Request cancelled",
+    body: parsed.data.reason,
+  });
 
   revalidateRequest(parsed.data.requestId);
   return { ok: true, eventId: evt.id };
@@ -264,6 +342,12 @@ export async function markReviewed(input: z.infer<typeof reviewedSchema>): Promi
     body: parsed.data.note?.trim() || "Reviewed and confirmed in-scope.",
   });
   if (evt.error) return { error: evt.error };
+
+  await notifyRequester({
+    requestId: parsed.data.requestId,
+    title: "Request reviewed",
+    body: parsed.data.note?.trim() || "Operations confirmed it's in scope.",
+  });
 
   revalidateRequest(parsed.data.requestId);
   return { ok: true, eventId: evt.id };

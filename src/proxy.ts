@@ -15,7 +15,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const GATED_PREFIXES = ["/app", "/admin"];
+const GATED_PREFIXES = ["/app", "/admin", "/tech"];
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: request.headers } });

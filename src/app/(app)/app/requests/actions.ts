@@ -94,7 +94,15 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
     // Persist photo paths in service_request_photos. Non-fatal — if
     // this table doesn't exist or RLS blocks, we still succeed on the
     // base request so the user flow isn't stuck.
-    const photoPaths = parsed.data.photoPaths ?? [];
+    //
+    // SECURITY: every submitted path must start with this user's
+    // auth.uid() prefix. The upload UI enforces this already, but a
+    // crafted POST could submit another user's path and we'd attach
+    // it to the new request, exposing it via signed URLs on the
+    // detail page. The storage RLS *also* gates download by prefix,
+    // but defence-in-depth: reject the path here.
+    const prefix = `${session.authUserId}/`;
+    const photoPaths = (parsed.data.photoPaths ?? []).filter((p) => p.startsWith(prefix));
     if (photoPaths.length > 0 && data?.id) {
       // service_request_photos schema: id, service_request_id,
        // storage_path, photo_kind, created_at — uploader_id is not a
@@ -111,7 +119,23 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
       }
     }
 
+    // Member-facing notification so /app/inbox shows the submission.
+    // Non-fatal — the request itself succeeds even if notifications
+    // is misconfigured.
+    try {
+      await supabase.from("notifications").insert({
+        user_id: session.authUserId,
+        title: "Request received",
+        body: `We've got your request "${parsed.data.title}". Operations reviews within 24h.`,
+        is_read: false,
+        request_id: data.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[new-request] notification insert failed", notifyErr);
+    }
+
     revalidatePath("/app/requests");
+    revalidatePath("/app/inbox");
     revalidatePath("/app");
     return { id: data.id as string };
   } catch (err) {

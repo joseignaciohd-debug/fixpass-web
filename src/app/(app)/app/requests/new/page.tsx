@@ -43,10 +43,17 @@ export default async function NewRequestPage() {
       redirect("/plans?intent=new-request");
     }
   } catch (err) {
-    // Don't swallow Next's redirect signal — re-throw so the redirect
-    // actually fires. Other errors (DB unreachable etc.) fall through
-    // to render the form and rely on the action gate as backup.
-    if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
+    // Next 13+ marks redirect signals via `digest` (starting with
+    // "NEXT_REDIRECT"), NOT `message`. The old `message === "NEXT_REDIRECT"`
+    // check silently swallowed the redirect and let unsubscribed users
+    // through to the form. Re-throw on either marker so we don't depend
+    // on which Next internal we happen to be running.
+    const isRedirect =
+      typeof (err as { digest?: unknown }).digest === "string" &&
+      (err as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+    if (isRedirect || (err instanceof Error && err.message === "NEXT_REDIRECT")) {
+      throw err;
+    }
   }
 
   return (
@@ -61,7 +68,11 @@ export default async function NewRequestPage() {
       </Card>
 
       <Card>
-        <NewRequestForm userId={session.userId} />
+        {/* Photo storage bucket RLS pins paths to auth.uid(), so pass
+            authUserId here, not the public.users.id. Using userId
+            would cause every photo upload to be rejected silently
+            by the storage policy. */}
+        <NewRequestForm userId={session.authUserId} />
       </Card>
     </div>
   );

@@ -28,7 +28,11 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
-  const next = url.searchParams.get("next") || "/app";
+  // Reject protocol-relative ("//evil.com") to close an open-redirect
+  // hole — startsWith("/") alone would accept it because the leading
+  // slash matches.
+  const rawNext = url.searchParams.get("next") || "/app";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app";
 
   if (!tokenHash || !type) {
     return NextResponse.redirect(
@@ -58,7 +62,7 @@ export async function GET(request: NextRequest) {
     try {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
-        const safeNext = next.startsWith("/") ? next : "/app";
+        const safeNext = next; // already sanitized at the top of the handler
         return NextResponse.redirect(new URL(safeNext, request.url));
       }
     } catch {
@@ -74,6 +78,6 @@ export async function GET(request: NextRequest) {
 
   // Verified. Cookies are set by the SSR client's setAll() callback
   // during verifyOtp; the redirect carries them forward.
-  const safeNext = next.startsWith("/") ? next : "/app";
+  const safeNext = next; // already sanitized at the top of the handler
   return NextResponse.redirect(new URL(safeNext, request.url));
 }

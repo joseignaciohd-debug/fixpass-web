@@ -1,23 +1,42 @@
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { StepDots } from "@/components/ui/step-dots";
 import { SubscribePlans } from "@/components/subscribe/subscribe-plans";
 import type { BillingCycleId, PlanId } from "@/lib/config/site-data";
+import { requireSession } from "@/lib/auth/session";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 const VALID_PLANS: PlanId[] = ["silver", "gold", "platinum"];
 const VALID_CYCLES: BillingCycleId[] = ["3mo", "6mo", "1yr"];
 
+// Surface checkout-side error / cancel signals as a friendly banner
+// instead of letting the user land on a normal subscribe page with
+// no acknowledgment.
+const ERROR_COPY: Record<string, string> = {
+  cancelled: "Checkout cancelled — no charge was made. Pick a plan whenever you're ready.",
+  "rate-limited": "Too many attempts in a short window. Wait a moment and try again.",
+  "stripe-unavailable": "Stripe is being reconfigured right now. Try again in a few minutes.",
+  "stripe-rejected": "Stripe rejected the checkout. Refresh and try again; if it persists, contact support.",
+  "stripe-no-url": "Stripe didn't return a checkout URL. Try again or contact support.",
+  "bad-cycle": "Unknown billing cycle. Refresh the page.",
+  "bad-plan": "Unknown plan. Refresh the page.",
+};
+
 export default async function SubscribePage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await requireSession("/app/subscribe");
   const params = (await searchParams) ?? {};
   const planParam = typeof params.plan === "string" ? params.plan : undefined;
   const cycleParam = typeof params.cycle === "string" ? params.cycle : undefined;
+  const errorParam = typeof params.error === "string" ? params.error : undefined;
+  const cancelledParam = params.checkout === "cancelled";
   const preselectPlan = VALID_PLANS.includes(planParam as PlanId)
     ? (planParam as PlanId)
     : undefined;
@@ -25,8 +44,57 @@ export default async function SubscribePage({
     ? (cycleParam as BillingCycleId)
     : undefined;
 
+  // Double-payment guard: a member who already has an active sub
+  // shouldn't be allowed to start a SECOND Stripe Checkout — that
+  // creates two live subscriptions billed against the same card.
+  // Send them to membership where they can manage existing plan.
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", session.userId)
+      .maybeSingle();
+    if (customer?.id) {
+      const { data: existing } = await supabase
+        .from("subscriptions")
+        .select("status")
+        .eq("customer_id", customer.id)
+        .in("status", ["active", "trialing"])
+        .limit(1)
+        .maybeSingle();
+      if (existing) {
+        redirect("/app/membership?already=active");
+      }
+    }
+  } catch (err) {
+    // Same NEXT_REDIRECT detection pattern as /app/requests/new.
+    const isRedirect =
+      typeof (err as { digest?: unknown }).digest === "string" &&
+      (err as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+    if (isRedirect || (err instanceof Error && err.message === "NEXT_REDIRECT")) {
+      throw err;
+    }
+  }
+
+  const errorMessage =
+    cancelledParam && !errorParam
+      ? ERROR_COPY.cancelled
+      : errorParam && ERROR_COPY[errorParam]
+        ? ERROR_COPY[errorParam]
+        : null;
+
   return (
     <div className="space-y-6">
+      {errorMessage ? (
+        <div
+          role="status"
+          className="rounded-2xl border border-brick/25 bg-brick-soft px-4 py-3 text-sm text-brick-ink"
+        >
+          {errorMessage}
+        </div>
+      ) : null}
+
       <GradientCard tone="royal" className="sm:p-10">
         <Badge tone="inverse">Set up your membership</Badge>
         <h1 className="display-hero mt-4 text-3xl text-white sm:text-4xl">

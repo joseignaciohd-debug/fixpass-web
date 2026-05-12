@@ -103,6 +103,24 @@ export function JoinForm({
         return;
       }
 
+      // Supabase's signUp for an *already-confirmed* email returns
+      // `{ user, session: null }` with an empty `identities` array —
+      // i.e. looks identical to the first-time-awaiting-confirmation
+      // case from the outside. If we blindly say "check your email,"
+      // the user waits forever for a mail that won't come because
+      // Supabase suppresses re-confirmation. Detect and redirect them
+      // to sign in instead.
+      const identities = (data.user as { identities?: unknown[] } | null)?.identities ?? null;
+      const alreadyRegistered = Array.isArray(identities) && identities.length === 0;
+      if (alreadyRegistered) {
+        setState("error");
+        setBanner(
+          `An account for ${values.email} already exists. Try signing in instead — use "Forgot password" if needed.`,
+        );
+        track(Funnel.JoinSignUpFailed, { reason: "already_registered" });
+        return;
+      }
+
       track(Funnel.JoinSignUpSucceeded);
       if (data.user?.id) identifyUser(data.user.id, { email: values.email });
 

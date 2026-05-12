@@ -88,7 +88,13 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
       track(Funnel.SignInSucceeded);
 
       // Role-aware redirect: let the server decide via /app landing.
-      const target = nextPath && nextPath.startsWith("/") ? nextPath : "/app";
+      // Reject protocol-relative ("//evil.com") and scheme-prefixed
+      // ("https://evil.com") values — `startsWith("/")` alone would
+      // accept "//evil.com" which the browser treats as cross-origin.
+      const target =
+        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+          ? nextPath
+          : "/app";
       router.replace(target);
       // Force a server re-render so the proxy sees the fresh cookie.
       router.refresh();

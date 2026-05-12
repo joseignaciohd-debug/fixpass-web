@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentSession } from "@/lib/auth/session";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServerClient, getSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 const schema = z.object({
   nickname: z.string().trim().min(1).max(60),
@@ -25,14 +25,41 @@ export async function saveProperty(input: unknown) {
   try {
     const supabase = await getSupabaseServerClient();
 
-    // Resolve customer id for this user.
-    const { data: customer } = await supabase
+    // Resolve customer id for this user. Auto-create the row if it
+    // doesn't exist yet — a member can land on /app/property between
+    // email-confirm and Stripe webhook firing, and we don't want to
+    // dead-end them with "finish onboarding first" when the only
+    // thing missing is a CRM-side bookkeeping row that we own.
+    let { data: customer } = await supabase
       .from("customers")
       .select("id")
       .eq("user_id", session.userId)
       .maybeSingle();
 
-    if (!customer) return { error: "No customer record yet — finish onboarding first." };
+    if (!customer) {
+      try {
+        const admin = getSupabaseServiceRoleClient();
+        const { data: created } = await admin
+          .from("customers")
+          .insert({ user_id: session.userId })
+          .select("id")
+          .maybeSingle();
+        customer = created;
+        if (!customer) {
+          // Race — another request inserted first; re-read.
+          const { data: refetched } = await supabase
+            .from("customers")
+            .select("id")
+            .eq("user_id", session.userId)
+            .maybeSingle();
+          customer = refetched;
+        }
+      } catch (err) {
+        console.warn("[property] customer auto-create skipped", err);
+      }
+    }
+
+    if (!customer) return { error: "Could not link your account. Try again in a moment." };
 
     // Upsert the single property tied to this customer.
     const { data: existing } = await supabase

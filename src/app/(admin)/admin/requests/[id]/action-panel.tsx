@@ -259,9 +259,19 @@ function ConfirmForm({
       className="grid gap-3"
       onSubmit={(e) => {
         e.preventDefault();
+        // `datetime-local` returns a naive "YYYY-MM-DDTHH:mm" string
+        // with no timezone. Calling `new Date(thatString).toISOString()`
+        // on a UTC Vercel server reinterprets it as UTC, producing a
+        // 5-7 hour drift for operators in CST/PST. Resolve here in the
+        // browser where we know the local zone, then send an absolute
+        // ISO that the server can trust verbatim.
+        const local = new Date(scheduledFor);
+        const isoWithOffset = Number.isNaN(local.getTime())
+          ? scheduledFor
+          : local.toISOString();
         onSubmit({
           requestId,
-          scheduledFor,
+          scheduledFor: isoWithOffset,
           technicianId,
           note: note.trim() || undefined,
         });
