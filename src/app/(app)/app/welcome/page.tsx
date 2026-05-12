@@ -40,7 +40,7 @@ export default async function WelcomePage({
   return (
     <div className="space-y-8">
       <WelcomeConfetti />
-      {session_id ? <WelcomePaymentWatcher userId={session.userId} /> : null}
+      {session_id ? <WelcomePaymentWatcher userId={session.authUserId} /> : null}
 
       <GradientCard tone="royal" className="sm:p-12">
         <Badge tone="inverse">Welcome aboard</Badge>

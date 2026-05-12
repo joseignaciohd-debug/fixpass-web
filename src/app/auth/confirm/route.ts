@@ -12,6 +12,13 @@
 //
 // Other types (recovery, email_change, invite) route here too with
 // `type` set accordingly.
+//
+// Edge case: mail clients (Gmail, Outlook, corporate spam filters)
+// pre-fetch links to scan them, which consumes the single-use OTP
+// before the user clicks. We detect "already used / expired" errors
+// and check whether the user already has a valid session before
+// surfacing an error — in many cases they do (verifyOtp was actually
+// successful, just on a different device or earlier scan).
 
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
@@ -41,7 +48,22 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
 
   if (error) {
-    // Most common case: link expired or already used.
+    // verifyOtp failed. Two real-world causes:
+    //  1. Link genuinely expired (>1h) or never valid.
+    //  2. Mail-client pre-fetcher already consumed it; the actual
+    //     human has been confirmed and may already have a session.
+    // For (2), if there's an existing valid session, just send them
+    // through — the link did its job. Otherwise show the friendly
+    // resend page on /sign-in.
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        const safeNext = next.startsWith("/") ? next : "/app";
+        return NextResponse.redirect(new URL(safeNext, request.url));
+      }
+    } catch {
+      /* fall through */
+    }
     return NextResponse.redirect(
       new URL(
         `/sign-in?error=confirm_expired&detail=${encodeURIComponent(error.message)}`,
