@@ -141,12 +141,33 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ received: true });
   } catch (err) {
-    // Don't return 5xx — Stripe will retry indefinitely and flood the endpoint.
-    // Return 200 but log so we see it in Sentry. (Block 3 will tighten this
-    // to return 500 for genuine infra failures so Stripe's own retry +
-    // dashboard becomes the alerting path.)
-    console.error("[stripe webhook] handler error", err);
+    // Classify the failure:
+    //   - True infrastructure errors (DB down, network timeout, etc.)
+    //     → return 500 so Stripe retries on its own schedule (up to
+    //     3 days). Stripe's dashboard becomes a free pager.
+    //   - Semantic / data-shape errors (validation, unknown plan
+    //     code, missing FK target) → return 200 with a warning,
+    //     because retrying won't help and Stripe will retry forever.
+    // Both paths capture to Sentry so we see them either way.
     Sentry.captureException(err, { tags: { area: "stripe_webhook", event_type: event.type } });
+    console.error("[stripe webhook] handler error", err);
+
+    const e = err as { code?: string; message?: string };
+    const msg = (e.message ?? "").toLowerCase();
+    // Heuristic: "fetch failed", "timeout", "ECONN", "network", "EAI_AGAIN"
+    // → likely transient. Postgres errors that include "violates" are
+    // data-shape and won't recover.
+    const transient =
+      msg.includes("fetch failed") ||
+      msg.includes("timeout") ||
+      msg.includes("econn") ||
+      msg.includes("network") ||
+      msg.includes("eai_again") ||
+      msg.includes("supabase") && !msg.includes("violates");
+
+    if (transient) {
+      return NextResponse.json({ error: "transient", message: e.message }, { status: 500 });
+    }
     return NextResponse.json({ received: true, warning: "handler error" });
   }
 }
