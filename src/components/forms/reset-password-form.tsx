@@ -36,6 +36,21 @@ export function ResetPasswordForm() {
     setState("loading");
     setBanner(null);
     try {
+      // Server-side rate check before letting Supabase fire emails —
+      // limits both per-IP and per-target-email so an attacker can't
+      // flood a victim's inbox with reset emails.
+      const rl = await fetch("/api/auth/rate-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "reset", email: values.email }),
+      });
+      if (rl.status === 429) {
+        const data = (await rl.json().catch(() => null)) as { error?: string } | null;
+        setBanner(data?.error ?? "Too many reset attempts. Try again later.");
+        setState("error");
+        return;
+      }
+
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
         // Land on /reset-password/confirm where the user types the new

@@ -12,6 +12,7 @@
 // request.text() — do not call request.json() first.
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import type Stripe from "stripe";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
@@ -141,8 +142,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   } catch (err) {
     // Don't return 5xx — Stripe will retry indefinitely and flood the endpoint.
-    // Return 200 but log so we see it in Sentry.
+    // Return 200 but log so we see it in Sentry. (Block 3 will tighten this
+    // to return 500 for genuine infra failures so Stripe's own retry +
+    // dashboard becomes the alerting path.)
     console.error("[stripe webhook] handler error", err);
+    Sentry.captureException(err, { tags: { area: "stripe_webhook", event_type: event.type } });
     return NextResponse.json({ received: true, warning: "handler error" });
   }
 }
@@ -217,12 +221,22 @@ async function syncSubscription(
         userId,
         error: createErr.message,
       });
+      Sentry.captureMessage("[stripe webhook] failed to auto-create customer row", {
+        level: "error",
+        tags: { area: "stripe_webhook", reason: "customer_insert" },
+        extra: { userId, error: createErr.message },
+      });
     } else {
       customerId = (created?.id as string | undefined) ?? undefined;
     }
   }
   if (!customerId) {
     console.warn("[stripe webhook] cannot resolve customer_id", { stripeCustomerId, userId });
+    Sentry.captureMessage("[stripe webhook] cannot resolve customer_id", {
+      level: "warning",
+      tags: { area: "stripe_webhook", reason: "customer_id" },
+      extra: { stripeCustomerId, userId },
+    });
     return;
   }
 
@@ -242,6 +256,11 @@ async function syncSubscription(
 
   if (!plan?.id) {
     console.warn("[stripe webhook] missing membership_plans row", { planCode });
+    Sentry.captureMessage("[stripe webhook] missing membership_plans row", {
+      level: "warning",
+      tags: { area: "stripe_webhook", reason: "plan_missing" },
+      extra: { planCode, priceId },
+    });
     return;
   }
 

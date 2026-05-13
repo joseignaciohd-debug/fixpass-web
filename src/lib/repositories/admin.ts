@@ -1,6 +1,7 @@
 // Admin ops data — KPI metrics, queue summary, request list, customer
 // watchlist. Reads from Supabase with graceful empty-state fallback.
 
+import * as Sentry from "@sentry/nextjs";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AdminMetrics = {
@@ -132,7 +133,10 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       customers: [],
       source: subs ? "live" : "empty",
     };
-  } catch {
+  } catch (err) {
+    // Without this, schema drift hides as "empty state" on the
+    // admin dashboard for hours.
+    Sentry.captureException(err, { tags: { area: "repo_admin_snapshot" } });
     return {
       metrics: emptyMetrics,
       queueSummary: emptyQueue,

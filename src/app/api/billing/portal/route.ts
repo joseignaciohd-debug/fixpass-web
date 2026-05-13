@@ -2,13 +2,26 @@
 // members can update cards, view invoices, or cancel.
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import Stripe from "stripe";
 import { getCurrentSession } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   const session = await getCurrentSession();
   if (!session) return NextResponse.redirect(new URL("/sign-in", request.url), { status: 303 });
+
+  // Prevent abusive portal-session creation. The portal itself is harmless
+  // but generating sessions in a loop pollutes the Stripe dashboard and
+  // could burn into Stripe's per-account session quota.
+  const rl = rateLimit(`portal:${session.userId}`, { max: 20, windowMs: 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many billing portal requests. Wait a moment and try again." },
+      { status: 429 },
+    );
+  }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
@@ -52,6 +65,10 @@ export async function POST(request: Request) {
 
     return NextResponse.redirect(portal.url, { status: 303 });
   } catch (err) {
+    Sentry.captureException(err, {
+      tags: { area: "portal" },
+      extra: { userId: session.userId },
+    });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unexpected error." },
       { status: 500 },

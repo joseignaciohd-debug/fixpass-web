@@ -2,6 +2,7 @@
 // empty-state if the DB isn't configured so UI renders useful
 // placeholders instead of crashing.
 
+import * as Sentry from "@sentry/nextjs";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type CustomerRequest = {
@@ -94,16 +95,35 @@ export async function getCustomerSnapshot(
     const customerId = customerRow?.id as string | undefined;
 
     const [subRes, propRes, reqRes, notifRes, billRes] = await Promise.all([
+      // Prefer the user's CURRENT active/trialing subscription if one
+      // exists. Only fall back to the newest row (likely cancelled or
+      // paused) when there isn't an active one. Previously the query
+      // ordered by created_at across ALL statuses, so a churned member
+      // saw "Current plan: Gold" with status=cancelled, which is the
+      // wrong narrative.
       customerId
-        ? supabase
-            .from("subscriptions")
-            .select(
-              "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
-            )
-            .eq("customer_id", customerId)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle()
+        ? (async () => {
+            const active = await supabase
+              .from("subscriptions")
+              .select(
+                "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
+              )
+              .eq("customer_id", customerId)
+              .in("status", ["active", "trialing"])
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (active.data) return active;
+            return supabase
+              .from("subscriptions")
+              .select(
+                "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
+              )
+              .eq("customer_id", customerId)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+          })()
         : Promise.resolve({ data: null }),
       // address_line_1 (with underscore) is the canonical column.
       // Alias to address_line1 so the consumer below keeps working.
@@ -200,7 +220,16 @@ export async function getCustomerSnapshot(
           billedAt: b.billed_at as string,
         })) ?? [],
     };
-  } catch {
+  } catch (err) {
+    // Without this Sentry capture, schema drift / RLS regressions
+    // silently degrade every member's dashboard to "empty state"
+    // and ops finds out via Twitter. With it, every error in the
+    // snapshot fetch fires Sentry once, tagged so an alert rule
+    // can page on volume.
+    Sentry.captureException(err, {
+      tags: { area: "repo_customer_snapshot" },
+      extra: { authUserId },
+    });
     return emptySnapshot(fallback.name, fallback.email);
   }
 }

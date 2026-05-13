@@ -62,6 +62,20 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
     setLoading(true);
     track(Funnel.SignInSubmitted);
     try {
+      // Server-side rate check before we let Supabase see the
+      // attempt. Slows credential-stuffing way down — defaults are
+      // 8 attempts per IP and per email per 5 minutes.
+      const rl = await fetch("/api/auth/rate-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "sign-in", email: values.email }),
+      });
+      if (rl.status === 429) {
+        const data = (await rl.json().catch(() => null)) as { error?: string } | null;
+        toast.show(data?.error ?? "Too many attempts. Try again later.", "error");
+        return;
+      }
+
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,

@@ -3,6 +3,7 @@
 // rerolling the same Supabase calls.
 
 import { redirect } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import { getSupabaseServerClient, getSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 export type Role = "customer" | "technician" | "admin";
@@ -45,6 +46,7 @@ export async function getCurrentSession(): Promise<AppSession | null> {
     user = result.data.user;
   } catch (err) {
     console.warn("[session] auth.getUser threw", err);
+    Sentry.captureException(err, { tags: { area: "session", stage: "auth_getUser" } });
     return null;
   }
 
@@ -94,10 +96,24 @@ export async function getCurrentSession(): Promise<AppSession | null> {
       }
     } catch (err) {
       console.warn("[session] auto-provision skipped (service role unavailable)", err);
+      Sentry.captureException(err, {
+        tags: { area: "session", stage: "users_autoprovision" },
+        extra: { authUserId: user.id },
+      });
     }
   }
 
-  if (!profile) return null;
+  if (!profile) {
+    Sentry.captureMessage("[session] no profile after auto-provision", {
+      level: "warning",
+      tags: { area: "session", stage: "no_profile" },
+      extra: { authUserId: user.id },
+    });
+    return null;
+  }
+
+  // Attribute future Sentry events on this server render to the user.
+  Sentry.setUser({ id: profile.id as string, email: (user.email ?? undefined) });
 
   const role = (profile.role ?? "customer") as Role;
   return {

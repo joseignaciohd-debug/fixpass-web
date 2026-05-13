@@ -3,9 +3,11 @@
 // Server actions for /app/requests — keeps write-path on the server
 // so RLS enforces ownership + nothing sneaks through from client code.
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentSession } from "@/lib/auth/session";
+import { notifyOpsAndMemberOfRequest } from "@/lib/email/resend";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z.object({
@@ -132,6 +134,27 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
       });
     } catch (notifyErr) {
       console.warn("[new-request] notification insert failed", notifyErr);
+    }
+
+    // Fire-and-forget email: confirmation to the member + lead to ops.
+    // Best-effort — if Resend isn't configured it silently no-ops.
+    try {
+      const h = await headers();
+      const host = h.get("x-forwarded-host") ?? h.get("host") ?? "www.getfixpass.com";
+      const proto = h.get("x-forwarded-proto") ?? "https";
+      const siteOrigin = `${proto}://${host}`;
+      await notifyOpsAndMemberOfRequest({
+        memberName: session.name,
+        memberEmail: session.email,
+        requestId: data.id as string,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        area: parsed.data.area || undefined,
+        preferredWindow: parsed.data.preferredWindow || undefined,
+        siteOrigin,
+      });
+    } catch (mailErr) {
+      console.warn("[new-request] email notify failed", mailErr);
     }
 
     revalidatePath("/app/requests");

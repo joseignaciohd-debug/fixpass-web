@@ -4,6 +4,7 @@
 // time (see mobile session recap).
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import Stripe from "stripe";
 import { getCurrentSession } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
@@ -84,31 +85,42 @@ export async function POST(request: Request) {
 
   const stripe = new Stripe(stripeKey);
 
+  // Idempotency key: same (user, plan, cycle, current-day-bucket) maps
+  // to the same Stripe checkout session. Stripe will safely return the
+  // already-created session instead of creating a duplicate when the
+  // user double-taps Continue or a flaky network retries. Day-bucketed
+  // so legitimate re-attempts the next day still work.
+  const dayBucket = new Date().toISOString().slice(0, 10);
+  const idempotencyKey = `checkout:${session.userId}:${planId}:${billingCycle}:${dayBucket}`;
+
   let checkout;
   try {
-    checkout = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
-      allow_promotion_codes: true,
-      success_url: `${origin}/app/welcome?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/app/subscribe?checkout=cancelled`,
-      // client_reference_id lets the webhook write a payment_events row
-      // so the app can unlock immediately via Supabase Realtime.
-      client_reference_id: session.userId,
-      metadata: {
-        user_id: session.userId,
-        plan_code: planId,
-        billing_cycle: billingCycle,
-      },
-      subscription_data: {
+    checkout = await stripe.checkout.sessions.create(
+      {
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        allow_promotion_codes: true,
+        success_url: `${origin}/app/welcome?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/app/subscribe?checkout=cancelled`,
+        // client_reference_id lets the webhook write a payment_events row
+        // so the app can unlock immediately via Supabase Realtime.
+        client_reference_id: session.userId,
         metadata: {
           user_id: session.userId,
           plan_code: planId,
           billing_cycle: billingCycle,
         },
+        subscription_data: {
+          metadata: {
+            user_id: session.userId,
+            plan_code: planId,
+            billing_cycle: billingCycle,
+          },
+        },
+        customer_email: session.email,
       },
-      customer_email: session.email,
-    });
+      { idempotencyKey },
+    );
   } catch (err) {
     // Stripe.checkout.sessions.create can throw for archived/wrong-mode
     // prices, key/account mismatches, etc. Log the full error to Vercel
@@ -122,6 +134,10 @@ export async function POST(request: Request) {
       planId,
       billingCycle,
       priceId,
+    });
+    Sentry.captureException(err, {
+      tags: { area: "checkout", stripe_code: e.code ?? "unknown" },
+      extra: { planId, billingCycle, priceId, userId: session.userId },
     });
     const detail = e.code ? `${e.code}: ${e.message ?? "unknown"}` : (e.message ?? "unknown error");
     return fail(502, `Stripe rejected checkout — ${detail}`, "/app/subscribe?error=stripe-rejected");
