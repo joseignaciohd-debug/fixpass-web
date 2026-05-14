@@ -286,14 +286,45 @@ async function syncSubscription(
   }
 
   const status = normalizeStatus(subscription.status);
-  // biome-ignore lint: Stripe's type hints lag — cast to any to read snake_case fields.
-  const sub = subscription as unknown as {
-    current_period_start: number;
-    current_period_end: number;
-    cancel_at_period_end: boolean;
+  // Stripe API 2025+ moved `current_period_start` / `current_period_end`
+  // off the Subscription object onto each SubscriptionItem. Read from
+  // the item first, fall back to the subscription for older API
+  // versions, and skip the upsert gracefully if neither is present
+  // (otherwise `new Date(undefined * 1000).toISOString()` throws
+  // RangeError: Invalid time value and the entire activation aborts).
+  const subFields = subscription as unknown as {
+    current_period_start?: number;
+    current_period_end?: number;
+    cancel_at_period_end?: boolean;
   };
-  const currentPeriodStart = new Date(sub.current_period_start * 1000).toISOString();
-  const currentPeriodEnd = new Date(sub.current_period_end * 1000).toISOString();
+  const itemFields = firstItem as unknown as {
+    current_period_start?: number;
+    current_period_end?: number;
+  } | undefined;
+  const periodStartUnix =
+    itemFields?.current_period_start ?? subFields.current_period_start;
+  const periodEndUnix = itemFields?.current_period_end ?? subFields.current_period_end;
+
+  if (typeof periodStartUnix !== "number" || typeof periodEndUnix !== "number") {
+    console.warn("[stripe webhook] missing current_period_start/end", {
+      subscriptionId,
+      hasItemStart: typeof itemFields?.current_period_start,
+      hasSubStart: typeof subFields.current_period_start,
+    });
+    Sentry.captureMessage("[stripe webhook] missing current_period_start/end", {
+      level: "warning",
+      tags: { area: "stripe_webhook", reason: "period_fields" },
+      extra: {
+        subscriptionId,
+        itemKeys: firstItem ? Object.keys(firstItem) : null,
+        subKeys: Object.keys(subscription),
+      },
+    });
+    return;
+  }
+
+  const currentPeriodStart = new Date(periodStartUnix * 1000).toISOString();
+  const currentPeriodEnd = new Date(periodEndUnix * 1000).toISOString();
 
   // Cancel any OTHER active subscription for this customer (defensive —
   // member shouldn't have two active subs).
@@ -316,7 +347,7 @@ async function syncSubscription(
     stripe_subscription_id: subscriptionId,
     current_period_start: currentPeriodStart,
     current_period_end: currentPeriodEnd,
-    cancel_at_period_end: sub.cancel_at_period_end,
+    cancel_at_period_end: subFields.cancel_at_period_end ?? false,
   };
   if (property?.id) payload.property_id = property.id;
 
