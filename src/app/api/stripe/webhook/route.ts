@@ -269,6 +269,66 @@ async function syncSubscription(
     .limit(1)
     .maybeSingle();
 
+  // properties.id is REQUIRED on subscriptions (the column is NOT NULL).
+  // If the member hasn't registered their home yet — common, because the
+  // /app/welcome flow asks them to do that AFTER paying — we create a
+  // placeholder property using the address Stripe collected at checkout
+  // (or TBD fields if Stripe didn't capture one). The member can replace
+  // the placeholder via /app/property; saveProperty() upserts in place.
+  let propertyId = property?.id as string | undefined;
+  if (!propertyId) {
+    let line1 = "TBD";
+    let city = "TBD";
+    let state = "TX";
+    let postal = "00000";
+    try {
+      const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
+      const isDeleted = (stripeCustomer as { deleted?: boolean }).deleted === true;
+      if (!isDeleted) {
+        const addr = (stripeCustomer as Stripe.Customer).address;
+        if (addr) {
+          line1 = addr.line1 ?? line1;
+          city = addr.city ?? city;
+          state = addr.state ?? state;
+          postal = addr.postal_code ?? postal;
+        }
+      }
+    } catch (err) {
+      console.warn("[stripe webhook] failed to fetch stripe customer address", err);
+    }
+    const { data: created, error: propErr } = await admin
+      .from("properties")
+      .insert({
+        customer_id: customerId,
+        nickname: "My home",
+        address_line_1: line1,
+        city,
+        state,
+        postal_code: postal,
+      })
+      .select("id")
+      .maybeSingle();
+    if (propErr) {
+      console.error("[stripe webhook] failed to auto-create property", propErr.message);
+      Sentry.captureMessage("[stripe webhook] failed to auto-create property", {
+        level: "error",
+        tags: { area: "stripe_webhook", reason: "property_insert" },
+        extra: { customerId, error: propErr.message },
+      });
+      return;
+    }
+    propertyId = (created?.id as string | undefined) ?? undefined;
+  }
+  if (!propertyId) {
+    console.warn("[stripe webhook] cannot resolve property_id", { customerId });
+    Sentry.captureMessage("[stripe webhook] cannot resolve property_id", {
+      level: "warning",
+      tags: { area: "stripe_webhook", reason: "property_id" },
+      extra: { customerId },
+    });
+    return;
+  }
+
   const { data: plan } = await admin
     .from("membership_plans")
     .select("id")
@@ -335,11 +395,9 @@ async function syncSubscription(
     .neq("stripe_subscription_id", subscriptionId)
     .eq("status", "active");
 
-  // property_id is included only when the customer has registered a
-  // property. New members typically pay before adding their address,
-  // so this is allowed to be null on first activation.
   const payload: Record<string, unknown> = {
     customer_id: customerId,
+    property_id: propertyId,
     membership_plan_id: plan.id,
     status,
     billing_cycle: billingCycle,
@@ -349,7 +407,6 @@ async function syncSubscription(
     current_period_end: currentPeriodEnd,
     cancel_at_period_end: subFields.cancel_at_period_end ?? false,
   };
-  if (property?.id) payload.property_id = property.id;
 
   const { data: existing } = await admin
     .from("subscriptions")
