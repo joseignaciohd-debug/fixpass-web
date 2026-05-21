@@ -87,6 +87,11 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   alternates: { canonical: "https://www.getfixpass.com" },
+  // iOS Safari auto-links phone/date/address-looking text, mutating the
+  // server-rendered DOM before React hydrates → hydration-mismatch crashes
+  // (observed post-checkout on /app/welcome, mobile Safari only). Opt out so
+  // the server HTML and the client tree stay identical.
+  formatDetection: { telephone: false, date: false, address: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

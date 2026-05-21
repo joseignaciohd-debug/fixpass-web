@@ -1,8 +1,11 @@
 "use client";
 
 // Route-level error boundary — catches errors thrown by any page under /.
-// Sentry already captures automatically; this is just the UI.
+// React "handles" boundary-caught errors, so Sentry's global handler never
+// sees them. We must report explicitly here, or client-side crashes (e.g.
+// hydration errors) go completely unlogged.
 
+import * as Sentry from "@sentry/nextjs";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +19,7 @@ export default function AppError({
 }) {
   useEffect(() => {
     console.error("[app error]", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

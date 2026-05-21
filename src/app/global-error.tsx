@@ -3,7 +3,9 @@
 // Global error boundary — catches root-layout failures. Kept intentionally
 // small so even if the main CSS/JS bundle is corrupted, this renders.
 
+import * as Sentry from "@sentry/nextjs";
 import { AlertOctagon } from "lucide-react";
+import { useEffect } from "react";
 
 export default function GlobalError({
   error,
@@ -12,6 +14,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif" }}>

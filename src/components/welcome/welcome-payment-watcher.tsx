@@ -40,19 +40,28 @@ export function WelcomePaymentWatcher({ userId }: { userId: string }) {
       router.refresh();
     };
 
-    const channel = supabase
-      .channel(`payment_events:user:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "payment_events",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => fire(),
-      )
-      .subscribe();
+    // Realtime is best-effort. If .channel()/.subscribe() throws (transport
+    // quirks, esp. on mobile Safari), the safety-net poll below still confirms
+    // the payment — and a throw here must never bubble into React and crash
+    // the welcome page for a customer who just paid.
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+    try {
+      channel = supabase
+        .channel(`payment_events:user:${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "payment_events",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => fire(),
+        )
+        .subscribe();
+    } catch {
+      // Ignore — the poll is the safety net.
+    }
 
     // Safety-net poll: check for a payment_events row directly in case
     // Realtime missed it (subscription race, network blip, etc.).
@@ -81,7 +90,7 @@ export function WelcomePaymentWatcher({ userId }: { userId: string }) {
 
     return () => {
       clearInterval(poll);
-      supabase!.removeChannel(channel);
+      if (channel) supabase!.removeChannel(channel);
     };
   }, [userId, router, toast]);
 
