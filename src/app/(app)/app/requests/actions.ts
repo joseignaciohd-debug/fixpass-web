@@ -9,6 +9,7 @@ import { z } from "zod";
 import { getCurrentSession } from "@/lib/auth/session";
 import { notifyOpsAndMemberOfRequest } from "@/lib/email/resend";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getVisitStatus, loadVisitSubscription } from "@/lib/repositories/visits";
 
 const schema = z.object({
   title: z.string().trim().min(4).max(120),
@@ -45,7 +46,7 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
       return { error: "No customer record yet — finish onboarding first." };
     }
 
-    const [{ data: property }, { data: subscription }] = await Promise.all([
+    const [{ data: property }, subscription] = await Promise.all([
       supabase
         .from("properties")
         .select("id")
@@ -53,14 +54,7 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle(),
-      supabase
-        .from("subscriptions")
-        .select("id")
-        .eq("customer_id", customer.id)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      loadVisitSubscription(supabase, customer.id),
     ]);
 
     if (!property) {
@@ -70,6 +64,23 @@ export async function createServiceRequest(input: unknown): Promise<{ error?: st
       return {
         error:
           "An active membership is required before submitting a request. Reactivate via the billing portal.",
+      };
+    }
+
+    // Visit-limit gate (safety net behind the new-request page's check):
+    // block when this billing month's covered visits are used up — counting
+    // both completed and in-flight requests.
+    const visits = await getVisitStatus(supabase, {
+      customerId: customer.id,
+      planCode: subscription.planCode,
+      anchorISO: subscription.anchorISO,
+    });
+    if (visits.outOfVisits) {
+      const resets = visits.resetsOn
+        ? ` They reset on ${new Date(visits.resetsOn).toLocaleDateString()}.`
+        : "";
+      return {
+        error: `You've used all ${visits.included} covered visit${visits.included === 1 ? "" : "s"} for this billing month.${resets}`,
       };
     }
 

@@ -4,6 +4,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getVisitStatus, resolvePlanCode } from "@/lib/repositories/visits";
 
 export type CustomerRequest = {
   id: string;
@@ -106,7 +107,7 @@ export async function getCustomerSnapshot(
             const active = await supabase
               .from("subscriptions")
               .select(
-                "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
+                "status, billing_cycle, current_period_start, current_period_end, membership_plan_id, customer_id",
               )
               .eq("customer_id", customerId)
               .in("status", ["active", "trialing"])
@@ -117,7 +118,7 @@ export async function getCustomerSnapshot(
             return supabase
               .from("subscriptions")
               .select(
-                "status, billing_cycle, current_period_end, membership_plan_id, customer_id",
+                "status, billing_cycle, current_period_start, current_period_end, membership_plan_id, customer_id",
               )
               .eq("customer_id", customerId)
               .order("created_at", { ascending: false })
@@ -157,6 +158,25 @@ export async function getCustomerSnapshot(
         .limit(10),
     ]);
 
+    // Real visit usage — completed + in-flight requests against the
+    // plan's monthly allowance, anchored to the subscription start day.
+    // Only meaningful for an active subscription; null otherwise.
+    let visitsUsed = 0;
+    let visitsRemaining: number | "Unlimited" = 0;
+    if (customerId && subRes.data) {
+      const planCode = await resolvePlanCode(
+        supabase,
+        subRes.data.membership_plan_id as string | null,
+      );
+      const visits = await getVisitStatus(supabase, {
+        customerId,
+        planCode,
+        anchorISO: (subRes.data.current_period_start as string) ?? null,
+      });
+      visitsUsed = visits.used;
+      visitsRemaining = visits.remaining;
+    }
+
     return {
       user: {
         id: userRow.id as string,
@@ -169,8 +189,8 @@ export async function getCustomerSnapshot(
         ? {
             status: (subRes.data.status as string) ?? "inactive",
             billingCycle: (subRes.data.billing_cycle as string) ?? "monthly",
-            visitsUsed: 0,
-            visitsRemaining: 0,
+            visitsUsed,
+            visitsRemaining,
             renewalDate: subRes.data.current_period_end
               ? new Date(subRes.data.current_period_end as string).toLocaleDateString()
               : "—",
