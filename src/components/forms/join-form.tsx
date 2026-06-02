@@ -6,6 +6,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -15,6 +16,11 @@ import { Card } from "@/components/ui/card";
 import { Funnel, identifyUser, track } from "@/lib/analytics/posthog";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
+// Bump this whenever /terms changes materially. Stored alongside the
+// acceptance timestamp so we can prove WHICH version a member agreed to.
+// Matches the "Last updated" date on /terms.
+const TERMS_VERSION = "2026-04";
+
 const schema = z.object({
   name: z.string().trim().min(1, "Your name, please.").max(120),
   email: z.string().trim().email("Double-check the email."),
@@ -23,6 +29,9 @@ const schema = z.object({
   city: z.string().trim().max(80).optional().or(z.literal("")),
   address: z.string().trim().max(200).optional().or(z.literal("")),
   details: z.string().trim().max(1500).optional().or(z.literal("")),
+  termsAccepted: z
+    .boolean()
+    .refine((v) => v === true, { message: "Please confirm you've read the Terms & Conditions." }),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -49,7 +58,16 @@ export function JoinForm({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", password: "", phone: "", city: "", address: "", details: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      city: "",
+      address: "",
+      details: "",
+      termsAccepted: false,
+    },
     mode: "onBlur",
   });
 
@@ -81,6 +99,11 @@ export function JoinForm({
             // (plan, cycle) combo instead of asking again.
             preselect_plan: preselectPlan ?? null,
             preselect_cycle: preselectCycle ?? null,
+            // Consent audit trail — proof the member accepted the Terms,
+            // when, and which version. Persisted in auth user metadata
+            // (no DB migration needed).
+            terms_accepted_at: new Date().toISOString(),
+            terms_version: TERMS_VERSION,
           },
           // Email confirmation handled by Supabase — user can come back via magic link.
           // Thread the preselect through the redirect so /app/subscribe
@@ -242,6 +265,34 @@ export function JoinForm({
                 placeholder="Shelves to mount, a few picture hangs, a sticky door…"
               />
             </Field>
+
+            <div className="sm:col-span-2">
+              <label className="flex items-start gap-3 rounded-2xl border border-border bg-canvas-elevated px-4 py-3.5 text-sm leading-6 text-ink-muted">
+                <input
+                  type="checkbox"
+                  {...register("termsAccepted")}
+                  aria-invalid={Boolean(errors.termsAccepted)}
+                  className="focus-ring mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border-strong accent-royal"
+                />
+                <span>
+                  I have read and understand the{" "}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-royal underline underline-offset-2"
+                  >
+                    Terms &amp; Conditions
+                  </Link>
+                  .
+                </span>
+              </label>
+              {errors.termsAccepted ? (
+                <span className="mt-1.5 block text-xs text-brick-ink">
+                  {errors.termsAccepted.message}
+                </span>
+              ) : null}
+            </div>
 
             <div className="mt-3 flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
               <button
