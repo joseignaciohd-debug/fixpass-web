@@ -67,12 +67,15 @@ export const localBusinessLd = {
 
 // One Service entry per plan. Each plan has three prepaid offers
 // (3mo / 6mo / 1yr); Google will typically surface the cheapest.
-export function planServiceLd(plan: {
-  name: string;
-  prices: { "3mo": number; "6mo": number; "1yr": number };
-  includedVisits: string | number;
-  tagline: string;
-}) {
+export function planServiceLd(
+  plan: {
+    name: string;
+    prices: { "3mo": number; "6mo": number; "1yr": number };
+    includedVisits: string | number;
+    tagline: string;
+  },
+  coveredServices: Array<{ title: string }> = [],
+) {
   const offers = [
     { months: 3, price: plan.prices["3mo"] },
     { months: 6, price: plan.prices["6mo"] },
@@ -106,6 +109,15 @@ export function planServiceLd(plan: {
         name: "Included visits",
         value: String(plan.includedVisits),
       },
+      ...(coveredServices.length
+        ? [
+            {
+              "@type": "PropertyValue",
+              name: "Covered services",
+              value: coveredServices.map((s) => s.title).join(", "),
+            },
+          ]
+        : []),
     ],
   };
 }

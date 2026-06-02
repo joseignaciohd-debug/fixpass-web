@@ -43,7 +43,7 @@ export const plans: Array<{
     name: "Silver",
     tagline: "Lighter upkeep. Peace of mind on your terms.",
     prices: { "3mo": 74.99, "6mo": 124.99, "1yr": 244.99 },
-    includedVisits: 2,
+    includedVisits: 1,
     maxRelatedTasks: 3,
     maxLaborMinutes: 90,
     priority: "Standard",
@@ -57,7 +57,7 @@ export const plans: Array<{
     name: "Gold",
     tagline: "The core Fixpass plan for active households.",
     prices: { "3mo": 149.99, "6mo": 273.99, "1yr": 503.99 },
-    includedVisits: 5,
+    includedVisits: 3,
     maxRelatedTasks: 3,
     maxLaborMinutes: 90,
     priority: "Priority",
@@ -69,15 +69,15 @@ export const plans: Array<{
   {
     id: "platinum",
     name: "Platinum",
-    tagline: "Highest priority, fair-use guardrails, materials covered.",
+    tagline: "Highest priority, the widest coverage, materials included.",
     prices: { "3mo": 299.99, "6mo": 519.99, "1yr": 949.99 },
-    includedVisits: "Unlimited",
+    includedVisits: 5,
     maxRelatedTasks: 3,
     maxLaborMinutes: 90,
     priority: "Fastest",
     outOfScopeDiscount: 15,
     materialsAllowance: 40,
-    fairUseNotes: "Fair-use applies — keeps coverage affordable for everyone.",
+    fairUseNotes: null,
     featured: "Most complete",
   },
 ];
@@ -95,21 +95,63 @@ export function planPerMonth(plan: { prices: PlanPrices }, cycle: BillingCycleId
   return plan.prices[cycle] / cycleMonths(cycle);
 }
 
-// Canonical covered services. Outdoor work (fence painting, driveway
-// pressure washing, etc.) is offered to members but quoted separately
-// rather than counted as a covered visit — see `/coverage` and FAQ.
-export const serviceInventory = [
-  { title: "TV mounting",                 copy: "Brackets, anchors, cable management, level-checked." },
-  { title: "Shelves, mirrors & décor",    copy: "Floating shelves, mirrors, towel racks, gallery hangs." },
-  { title: "Furniture assembly",          copy: "Flat-pack dressers, bed frames, desks, bookcases." },
-  { title: "Interior door hardware",      copy: "Hinges, handles, latches, soft-close adjustments." },
-  { title: "Cabinet handles",             copy: "Knobs and pulls, drilled and aligned cleanly." },
-  { title: "Drywall & paint touch-ups",   copy: "Anchor holes, scuffs, nail pops, small patches." },
-  { title: "Kitchen & bath touch-ups",    copy: "Caulking refresh, shower curtain rods and liners." },
-  { title: "Light fixtures & switches",   copy: "Swap fixtures, replace plates and dimmers." },
-  { title: "Blinds & curtains",           copy: "Measure, mount, align — rooms feel finished." },
-  { title: "Closet systems",              copy: "Wire, melamine, or organizer kits, installed level." },
-];
+// Covered services unlock cumulatively by tier: each plan covers
+// everything the tiers below it cover, plus the services listed for it
+// here. The order of `tierOrder` IS the inheritance chain. Outdoor work
+// not listed here (fence painting, exterior touch-ups) is offered to
+// members but quoted separately — see `/coverage` and FAQ.
+export type CoveredService = {
+  title: string;
+  copy: string;
+  // Optional sub-items shown as a nested list (e.g. furniture types).
+  sub?: string[];
+};
+
+export const tierOrder: PlanId[] = ["silver", "gold", "platinum"];
+
+export const tierServices: Record<PlanId, CoveredService[]> = {
+  silver: [
+    { title: "Door adjustments",            copy: "Sticking or misaligned interior doors planed, shimmed, and rehung true." },
+    { title: "Small drywall patches",       copy: "Anchor holes, nail pops, and dings filled, sanded, and feathered flush." },
+    { title: "Handle installation",         copy: "Interior door handles and lever sets fitted, aligned, and tightened." },
+    { title: "Shelf installation",          copy: "Floating shelves and brackets anchored into stud and level-checked." },
+    { title: "Mirror installation",         copy: "Wall mirrors hung secure and plumb, hardware kept out of sight." },
+    { title: "Picture & frame installation", copy: "A single frame or a full gallery wall, spaced and leveled." },
+    { title: "Paint touch-ups",             copy: "Scuffs and patched spots on small areas blended into the wall." },
+    { title: "TV mounting",                 copy: "Brackets, anchors, cable management, level-checked." },
+  ],
+  gold: [
+    { title: "Curtain installation",        copy: "Rods and tracks measured, mounted, and aligned to the window." },
+    { title: "Knob replacement",            copy: "Cabinet and drawer knobs swapped, drilled, and aligned cleanly." },
+    { title: "Cabinet door adjustments",    copy: "Hinges tuned so doors sit even and close soft." },
+    { title: "Bathroom accessory installation", copy: "Towel bars, hooks, and holders anchored into tile or stud." },
+    { title: "Caulking touch-ups",          copy: "Tub, sink, and counter lines re-sealed clean and watertight." },
+    {
+      title: "Furniture assembly",
+      copy: "Flat-pack pieces built solid and squared up.",
+      sub: ["Beds", "TV consoles", "Armoires", "Small cabinets"],
+    },
+  ],
+  platinum: [
+    { title: "Closet repair",               copy: "Shelves, rods, and organizer systems re-secured and re-leveled." },
+    { title: "Driveway pressure washing",   copy: "Concrete and pavers washed back to clean." },
+  ],
+};
+
+// Cumulative covered-service list for a plan (its own tier + all below).
+export function coveredServicesFor(planId: PlanId): CoveredService[] {
+  const upto = tierOrder.slice(0, tierOrder.indexOf(planId) + 1);
+  return upto.flatMap((id) => tierServices[id]);
+}
+
+// The tier a given service first unlocks at (by title).
+export function serviceTier(title: string): PlanId {
+  return tierOrder.find((id) => tierServices[id].some((s) => s.title === title)) ?? "silver";
+}
+
+// Fully-resolved catalog — every covered service, in tier order. Used by
+// the request-form chips, JSON-LD, and any "everything we cover" listing.
+export const serviceInventory: CoveredService[] = coveredServicesFor("platinum");
 
 export const excludedServices = [
   "Major remodels and rough-framing",
@@ -130,11 +172,11 @@ export const defaultRules = [
 export const faqs = [
   {
     q: "What counts as a covered fix?",
-    a: "Small-to-medium interior work completed in a single visit — TV mounting, shelves and mirrors, furniture assembly, drywall and paint touch-ups, kitchen and bathroom caulking, cabinet handles, interior door hardware, light fixtures and switches, blinds and curtains, and closet systems. Up to 3 related tasks or one moderately sized job per visit, within a 90-minute labor cap.",
+    a: "Small-to-medium work completed in a single visit, with more services unlocking as you move up tiers. Silver covers the essentials — door adjustments, small drywall patches, handle, shelf, mirror, and picture/frame installation, small-area paint touch-ups, and TV mounting. Gold adds curtain installation, knob replacement, cabinet door adjustments, bathroom accessory installation, caulking touch-ups, and furniture assembly (beds, TV consoles, armoires, small cabinets). Platinum adds closet repair and driveway pressure washing. Every plan allows up to 3 related tasks or one moderately sized job per visit, within a 90-minute labor cap.",
   },
   {
     q: "What's NOT covered?",
-    a: "Anything that requires a licensed trade (new electrical circuits, plumbing re-pipes, water heater installs), major remodels, rough-framing, roofing, foundation work, tree removal, HVAC refrigerant work, or appliance repair under manufacturer warranty. Outdoor work — fence painting, driveway pressure washing, exterior touch-ups — is offered to members but quoted separately rather than counted against a covered visit. We'll quote licensed-trade work with your member discount or refer a partner.",
+    a: "Anything that requires a licensed trade (new electrical circuits, plumbing re-pipes, water heater installs), major remodels, rough-framing, roofing, foundation work, tree removal, HVAC refrigerant work, or appliance repair under manufacturer warranty. Outdoor work like fence painting and exterior touch-ups is offered to members but quoted separately rather than counted against a covered visit. Driveway pressure washing is included on Platinum. We'll quote licensed-trade work with your member discount or refer a partner.",
   },
   {
     q: "Are materials included?",
@@ -170,7 +212,7 @@ export const faqs = [
   },
   {
     q: "What's the typical cost vs hiring directly?",
-    a: "A single handyman call-out in Katy runs $95–$140/hr with a 1-hour minimum, so a typical visit costs $125–$200. Gold at $49.99/mo covers 5 visits, which penciled against paying directly saves members $500–$1,500/year depending on usage.",
+    a: "A single handyman call-out in Katy runs $95–$140/hr with a 1-hour minimum, so a typical visit costs $125–$200. Gold at $49.99/mo covers 3 visits a month, which penciled against paying directly saves members $500–$1,500/year depending on usage.",
   },
   {
     q: "Which areas are covered?",

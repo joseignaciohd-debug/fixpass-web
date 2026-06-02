@@ -26,9 +26,9 @@ const RULES: Array<{ headline: string; detail: string }> = [
       "An operator reviews scope, confirms coverage, and replies before anything is dispatched. Most covered visits land inside 1–3 business days.",
   },
   {
-    headline: "Outdoor work is quoted separately",
+    headline: "Most outdoor work is quoted separately",
     detail:
-      "Fence painting, driveway pressure washing, and other exterior touch-ups are offered to members but quoted separately rather than counted as a covered visit.",
+      "Fence painting and other exterior touch-ups are offered to members but quoted separately rather than counted as a covered visit. Driveway pressure washing is included on Platinum.",
   },
 ];
 

@@ -26,9 +26,9 @@ export default function TermsPage() {
 
         <h2>What you get</h2>
         <p>
-          Coverage for the membership tier you pick — Silver (2 visits/month), Gold (5), or Platinum
-          (unlimited under fair use). Every visit is scoped to up to 3 related tasks and 90 labor
-          minutes. Out-of-scope work gets a separate quote with your member discount applied.
+          Coverage for the membership tier you pick — Silver (1 visit/month), Gold (3), or Platinum
+          (5). Every visit is scoped to up to 3 related tasks and 90 labor minutes. Out-of-scope work
+          gets a separate quote with your member discount applied.
         </p>
 
         <h2>Billing</h2>

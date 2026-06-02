@@ -131,7 +131,7 @@ function SubscribeCard({
       </h3>
       <p className={`mt-1 text-sm ${isPlatinum ? "text-white/80" : "text-ink-muted"}`}>
         {typeof plan.includedVisits === "number"
-          ? `${plan.includedVisits} covered visits / mo`
+          ? `${plan.includedVisits} covered visit${plan.includedVisits === 1 ? "" : "s"} / mo`
           : plan.includedVisits}
       </p>
 

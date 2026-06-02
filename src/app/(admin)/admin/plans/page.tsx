@@ -15,8 +15,10 @@ export default function AdminPlansPage() {
               <p className="eyebrow">Plan</p>
               <h2 className="display-section mt-1 text-3xl text-ink">{p.name}</h2>
               <p className="mt-2 text-sm text-ink-muted">
-                {typeof p.includedVisits === "number" ? `${p.includedVisits} included visits` : p.includedVisits} ·{" "}
-                {p.maxLaborMinutes}-minute cap
+                {typeof p.includedVisits === "number"
+                  ? `${p.includedVisits} included visit${p.includedVisits === 1 ? "" : "s"}`
+                  : p.includedVisits}{" "}
+                · {p.maxLaborMinutes}-minute cap
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

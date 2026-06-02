@@ -30,6 +30,7 @@ import {
   plans,
   planPerMonth,
   serviceInventory,
+  serviceTier,
   testimonials,
 } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
@@ -139,7 +140,8 @@ export default function HomePage() {
               </h2>
               <p className="mt-5 text-base leading-7 text-ink-muted">
                 Each visit is scoped around the tasks homeowners actually ask for. Tidy, defined,
-                quick-moving household work that makes a home feel looked after.
+                quick-moving household work that makes a home feel looked after. The tag on each one
+                shows the plan it unlocks at — higher tiers include everything below them.
               </p>
               <div className="mt-8 flex gap-3">
                 <Button href="/coverage" variant="secondary">
@@ -158,8 +160,8 @@ export default function HomePage() {
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-white">
                       <Wrench size={16} />
                     </div>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-subtle">
-                      0{i + 1}
+                    <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+                      {plans.find((p) => p.id === serviceTier(s.title))?.name}
                     </span>
                   </div>
                   <h3 className="mt-5 font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
@@ -305,7 +307,7 @@ export default function HomePage() {
                   </div>
                   <p className={`mt-1 text-sm ${isPlatinum ? "text-white/60" : "text-ink-muted"}`}>
                     {typeof plan.includedVisits === "number"
-                      ? `${plan.includedVisits} covered visits`
+                      ? `${plan.includedVisits} covered visit${plan.includedVisits === 1 ? "" : "s"}`
                       : plan.includedVisits}{" "}
                     · prepay 3, 6, or 12 mo via Stripe
                   </p>

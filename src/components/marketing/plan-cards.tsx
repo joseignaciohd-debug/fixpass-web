@@ -19,6 +19,7 @@ import {
   plans,
   planPerMonth,
   planPrice,
+  tierServices,
 } from "@/lib/config/site-data";
 import { currency } from "@/lib/utils";
 
@@ -26,7 +27,13 @@ export function PlanCards({ ctaHref = "/join" }: { ctaHref?: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       {plans.map((plan, i) => (
-        <PlanCard key={plan.id} plan={plan} delay={0.06 * i} ctaHref={ctaHref} />
+        <PlanCard
+          key={plan.id}
+          plan={plan}
+          prevPlanName={i > 0 ? plans[i - 1].name : null}
+          delay={0.06 * i}
+          ctaHref={ctaHref}
+        />
       ))}
     </div>
   );
@@ -34,10 +41,12 @@ export function PlanCards({ ctaHref = "/join" }: { ctaHref?: string }) {
 
 function PlanCard({
   plan,
+  prevPlanName,
   delay,
   ctaHref,
 }: {
   plan: (typeof plans)[number];
+  prevPlanName: string | null;
   delay: number;
   ctaHref: string;
 }) {
@@ -107,7 +116,7 @@ function PlanCard({
       >
         <PlanLi highlight={isPlatinum}>
           {typeof plan.includedVisits === "number"
-            ? `${plan.includedVisits} covered visits / month`
+            ? `${plan.includedVisits} covered visit${plan.includedVisits === 1 ? "" : "s"} / month`
             : plan.includedVisits}
         </PlanLi>
         <PlanLi highlight={isPlatinum}>{plan.priority} scheduling priority</PlanLi>
@@ -119,6 +128,33 @@ function PlanCard({
         </PlanLi>
         <PlanLi highlight={isPlatinum}>{plan.outOfScopeDiscount}% off quoted work</PlanLi>
       </ul>
+
+      {/* What's covered — services unlock cumulatively, so Gold/Platinum
+          lead with an "everything in <prev tier>, plus:" line and then
+          list only what THIS tier adds. */}
+      <div className={`mt-7 border-t pt-6 ${isPlatinum ? "border-white/15" : "border-border"}`}>
+        <p
+          className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
+            isPlatinum ? "text-white/55" : "text-ink-subtle"
+          }`}
+        >
+          What&apos;s covered
+        </p>
+        {prevPlanName ? (
+          <p className={`mt-2 text-sm font-medium ${isPlatinum ? "text-white/85" : "text-ink"}`}>
+            Everything in {prevPlanName}, plus:
+          </p>
+        ) : null}
+        <ul
+          className={`mt-3 space-y-2.5 text-sm ${
+            isPlatinum ? "text-white/85" : "text-ink-muted"
+          }`}
+        >
+          {tierServices[plan.id].map((s) => (
+            <ServiceLi key={s.title} highlight={isPlatinum} title={s.title} sub={s.sub} />
+          ))}
+        </ul>
+      </div>
 
       <form action={ctaHref} method="get" className="mt-8">
         <input type="hidden" name="plan" value={plan.id} />
@@ -245,6 +281,30 @@ function PlanLi({ children, highlight }: { children: React.ReactNode; highlight:
     <li className="flex items-start gap-2">
       <Check size={16} className={`mt-0.5 shrink-0 ${highlight ? "text-honey" : "text-emerald"}`} />
       <span>{children}</span>
+    </li>
+  );
+}
+
+function ServiceLi({
+  title,
+  sub,
+  highlight,
+}: {
+  title: string;
+  sub?: string[];
+  highlight: boolean;
+}) {
+  return (
+    <li className="flex items-start gap-2">
+      <Check size={16} className={`mt-0.5 shrink-0 ${highlight ? "text-honey" : "text-emerald"}`} />
+      <span>
+        {title}
+        {sub?.length ? (
+          <span className={`block text-xs ${highlight ? "text-white/55" : "text-ink-subtle"}`}>
+            {sub.join(" · ")}
+          </span>
+        ) : null}
+      </span>
     </li>
   );
 }

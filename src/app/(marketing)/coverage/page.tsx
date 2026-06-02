@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
-import { defaultRules, excludedServices, serviceInventory } from "@/lib/config/site-data";
+import { defaultRules, excludedServices, plans, tierOrder, tierServices } from "@/lib/config/site-data";
 
 export const metadata: Metadata = {
   title: "Coverage",
@@ -50,17 +50,35 @@ export default function CoveragePage() {
                 </h2>
               </div>
             </div>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-              {serviceInventory.map((s) => (
-                <li
-                  key={s.title}
-                  className="rounded-xl border border-border bg-canvas-elevated px-4 py-3 text-sm"
-                >
-                  <p className="font-semibold text-ink">{s.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-ink-muted">{s.copy}</p>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-4 text-sm leading-7 text-ink-muted">
+              Services unlock by tier — each plan covers everything below it, plus its own additions.
+            </p>
+            <div className="mt-6 space-y-6">
+              {tierOrder.map((tierId, tierIdx) => {
+                const tierName = plans.find((p) => p.id === tierId)?.name ?? tierId;
+                return (
+                  <div key={tierId}>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+                      {tierIdx === 0 ? `${tierName} — included` : `${tierName} adds`}
+                    </p>
+                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {tierServices[tierId].map((s) => (
+                        <li
+                          key={s.title}
+                          className="rounded-xl border border-border bg-canvas-elevated px-4 py-3 text-sm"
+                        >
+                          <p className="font-semibold text-ink">{s.title}</p>
+                          <p className="mt-1 text-xs leading-5 text-ink-muted">{s.copy}</p>
+                          {s.sub?.length ? (
+                            <p className="mt-1 text-xs leading-5 text-ink-subtle">{s.sub.join(" · ")}</p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           </Card>
 
           <Card variant="muted">
@@ -78,8 +96,8 @@ export default function CoveragePage() {
             <p className="mt-4 text-sm leading-7 text-ink-muted">
               Anything requiring licensed trades or that exceeds the visit envelope gets handed off to a
               partner with a transparent quote — and your member discount still applies. Outdoor work like
-              fence painting and driveway pressure washing is offered to members but quoted separately, not
-              counted against a covered visit.
+              fence painting and exterior touch-ups is offered to members but quoted separately, not counted
+              against a covered visit. Driveway pressure washing is included on Platinum.
             </p>
             <ul className="mt-6 grid gap-2">
               {excludedServices.map((s) => (

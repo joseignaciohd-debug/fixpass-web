@@ -11,7 +11,7 @@ import { PlanCards } from "@/components/marketing/plan-cards";
 import { StickyPlansCTA } from "@/components/marketing/sticky-plans-cta";
 import { TrustBadges } from "@/components/marketing/trust-badges";
 import { JsonLd, planServiceLd } from "@/lib/seo/jsonld";
-import { plans } from "@/lib/config/site-data";
+import { plans, serviceInventory, serviceTier, tierOrder, coveredServicesFor } from "@/lib/config/site-data";
 
 export const metadata: Metadata = {
   title: "Plans",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 // Compare-table rows — each tuple is (label, silver, gold, platinum).
 const comparisonRows: Array<{ label: string; values: [string | boolean, string | boolean, string | boolean] }> = [
   { label: "Registered property",          values: ["One", "One", "One"] },
-  { label: "Covered visits",                values: ["2 / mo", "5 / mo", "Unlimited (fair use)"] },
+  { label: "Covered visits",                values: ["1 / mo", "3 / mo", "5 / mo"] },
   { label: "Labor cap / visit",             values: ["90 min", "90 min", "90 min"] },
   { label: "Related tasks / visit",         values: ["3", "3", "3"] },
   { label: "Materials allowance",           values: ["—", "—", "$40 / mo"] },
@@ -40,10 +40,24 @@ const comparisonRows: Array<{ label: string; values: [string | boolean, string |
   { label: "Stripe billing + self-serve portal", values: [true, true, true] },
 ];
 
+// Per-service ✓/— rows, derived from the cumulative tier catalog so the
+// table never drifts from `site-data.ts`. A tier covers a service if its
+// position in the inheritance chain is at or past where the service
+// first unlocks.
+const serviceRows: Array<{ label: string; values: [boolean, boolean, boolean] }> = serviceInventory.map(
+  (s) => {
+    const unlockAt = tierOrder.indexOf(serviceTier(s.title));
+    return {
+      label: s.title,
+      values: tierOrder.map((_, i) => i >= unlockAt) as [boolean, boolean, boolean],
+    };
+  },
+);
+
 export default function PlansPage() {
   return (
     <main className="relative">
-      <JsonLd data={plans.map((p) => planServiceLd(p))} />
+      <JsonLd data={plans.map((p) => planServiceLd(p, coveredServicesFor(p.id)))} />
       {/* HERO */}
       <section className="mx-auto max-w-7xl px-5 pb-10 pt-16 sm:px-8 lg:px-12 lg:pt-24">
         <Reveal className="max-w-3xl">
@@ -103,8 +117,8 @@ export default function PlansPage() {
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-6 text-ink-muted">
-            All plans share the same operator-reviewed request flow. Tier changes mostly affect capacity
-            and priority.
+            All plans share the same operator-reviewed request flow. Higher tiers add covered services
+            on top of more capacity and faster priority.
           </p>
         </Reveal>
 
@@ -143,6 +157,32 @@ export default function PlansPage() {
                     v ? <Check size={18} className="text-emerald" /> : <Minus size={18} className="text-ink-subtle" />
                   ) : (
                     <span>{v}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {/* Covered-services breakdown — which tier unlocks each service. */}
+          <div className="grid grid-cols-[1.4fr_repeat(3,1fr)] border-t border-border bg-ink/[0.03]">
+            <div className="col-span-4 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+              Covered services
+            </div>
+          </div>
+          {serviceRows.map((row, idx) => (
+            <div
+              key={row.label}
+              className={`grid grid-cols-[1.4fr_repeat(3,1fr)] border-t border-border text-sm ${
+                idx % 2 === 0 ? "bg-surface/60" : "bg-canvas-elevated/50"
+              }`}
+            >
+              <div className="px-6 py-4 font-medium text-ink">{row.label}</div>
+              {row.values.map((v, i) => (
+                <div key={i} className="flex items-center justify-center px-6 py-4 text-center">
+                  {v ? (
+                    <Check size={18} className="text-emerald" />
+                  ) : (
+                    <Minus size={18} className="text-ink-subtle" />
                   )}
                 </div>
               ))}

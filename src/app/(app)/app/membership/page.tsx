@@ -135,7 +135,7 @@ export default async function MembershipPage() {
                   }`}
                 >
                   {typeof p.includedVisits === "number"
-                    ? `${p.includedVisits} covered visits`
+                    ? `${p.includedVisits} covered visit${p.includedVisits === 1 ? "" : "s"}`
                     : p.includedVisits}{" "}
                   · {p.priority} scheduling
                 </p>

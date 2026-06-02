@@ -13,20 +13,13 @@ import { plans, planPerMonth, planPrice } from "@/lib/config/site-data";
 
 type Plan = "silver" | "gold" | "platinum";
 
-const PLAN_META: Record<
-  Plan,
-  { name: string; visits: number | "unlimited" }
-> = {
-  silver: { name: "Silver", visits: 2 },
-  gold: { name: "Gold", visits: 5 },
-  platinum: { name: "Platinum", visits: "unlimited" },
-};
-
-// Resolve a plan's pricing data from the shared plan config so the
-// calculator always reflects the source of truth.
+// Resolve a plan's name, covered visits, and pricing from the shared
+// plan config so the calculator always reflects the source of truth.
 function planData(id: Plan) {
   const p = plans.find((pl) => pl.id === id)!;
   return {
+    name: p.name,
+    visits: typeof p.includedVisits === "number" ? p.includedVisits : Infinity,
     yearly: planPrice(p, "1yr"),
     monthly: planPerMonth(p, "1yr"),
   };
@@ -57,12 +50,15 @@ export function CostCalculator({ defaultPlan = "gold" as Plan }: { defaultPlan?:
     };
   }, [hourlyRate, minCallOut, visitsPerMonth]);
 
-  const fixpass = PLAN_META[plan];
-  const pricing = planData(plan);
-  const fixpassAnnual = pricing.yearly;
+  const fixpass = planData(plan);
+  const fixpassAnnual = fixpass.yearly;
   const savings = Math.max(0, comparable.annual - fixpassAnnual);
-  const fits =
-    fixpass.visits === "unlimited" || visitsPerMonth <= (fixpass.visits as number);
+  const fits = visitsPerMonth <= fixpass.visits;
+  // Smallest tier whose covered visits cover the slider — used to nudge
+  // the visitor toward the right plan when their usage doesn't fit.
+  const bestFit = (["silver", "gold", "platinum"] as const).find(
+    (id) => visitsPerMonth <= planData(id).visits,
+  );
 
   return (
     <div className="rounded-[var(--radius-xl)] border border-border bg-surface/80 p-6 backdrop-blur sm:p-8">
@@ -122,7 +118,7 @@ export function CostCalculator({ defaultPlan = "gold" as Plan }: { defaultPlan?:
                     : "border-border bg-surface text-ink-muted hover:border-border-strong hover:text-ink"
                 }`}
               >
-                {PLAN_META[p].name}
+                {planData(p).name}
               </button>
             ))}
           </div>
@@ -140,7 +136,7 @@ export function CostCalculator({ defaultPlan = "gold" as Plan }: { defaultPlan?:
             <Row
               label={`Fixpass ${fixpass.name} (1-year prepaid)`}
               value={formatMoney(fixpassAnnual)}
-              helper={`${formatMoney(pricing.monthly)}/mo equivalent · billed yearly`}
+              helper={`${formatMoney(fixpass.monthly)}/mo equivalent · billed yearly`}
               tone="royal"
             />
 
@@ -159,11 +155,11 @@ export function CostCalculator({ defaultPlan = "gold" as Plan }: { defaultPlan?:
               </p>
               <p className="mt-2 text-xs leading-relaxed text-emerald-ink/80">
                 Based on {visitsPerMonth} visit{visitsPerMonth === 1 ? "" : "s"} / month × 12.
-                {!fits && fixpass.visits !== "unlimited" ? (
+                {!fits ? (
                   <>
                     {" "}
                     <Badge tone="honey" className="ml-1 inline-flex">
-                      Platinum fits better
+                      {bestFit ? `${planData(bestFit).name} fits better` : "Beyond plan limits"}
                     </Badge>
                   </>
                 ) : null}
