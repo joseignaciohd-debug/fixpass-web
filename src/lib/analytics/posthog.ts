@@ -20,7 +20,10 @@ export function initAnalytics() {
     api_host: HOST,
     // Explicit track() calls only. No autocapture = cleaner event taxonomy.
     autocapture: false,
-    capture_pageview: true,
+    // AnalyticsProvider fires $pageview manually on every navigation,
+    // including the initial mount — leaving this on double-counts the
+    // landing pageview.
+    capture_pageview: false,
     capture_pageleave: true,
     respect_dnt: true,
     persistence: "localStorage+cookie",
@@ -56,6 +59,8 @@ export const Funnel = {
   SignInSubmitted: "sign_in_submitted",
   SignInSucceeded: "sign_in_succeeded",
   SignInFailed: "sign_in_failed",
+  OAuthStarted: "oauth_sign_in_started",
+  OAuthFailed: "oauth_sign_in_failed",
   // Billing
   PlanSelected: "plan_selected",
   CheckoutRedirected: "checkout_redirected",

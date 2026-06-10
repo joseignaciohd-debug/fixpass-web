@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { OAuthButtons, OAuthDivider } from "@/components/forms/oauth-buttons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Funnel, identifyUser, track } from "@/lib/analytics/posthog";
@@ -197,6 +198,30 @@ export function JoinForm({
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 grid gap-4 sm:grid-cols-2">
         {step === 1 ? (
           <>
+            <div className="grid gap-4 sm:col-span-2">
+              {/* OAuth signups skip the property step — /app collects the
+                  property + plan details after the account exists. */}
+              <OAuthButtons
+                nextPath={
+                  preselectPlan
+                    ? `/app/subscribe?plan=${preselectPlan}${preselectCycle ? `&cycle=${preselectCycle}` : ""}`
+                    : "/app"
+                }
+              />
+              <p className="text-center text-xs text-ink-subtle">
+                By continuing, you agree to the{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-royal underline underline-offset-2"
+                >
+                  Terms &amp; Conditions
+                </Link>
+                .
+              </p>
+              <OAuthDivider />
+            </div>
             <Field label="Full name" error={errors.name?.message} className="sm:col-span-2">
               <input {...register("name")} className="fp-input" autoComplete="name" aria-invalid={Boolean(errors.name)} />
             </Field>

@@ -212,11 +212,11 @@ export const faqs = [
   },
   {
     q: "What's the typical cost vs hiring directly?",
-    a: "A single handyman call-out in Katy runs $95–$140/hr with a 1-hour minimum, so a typical visit costs $125–$200. Gold at $49.99/mo covers 3 visits a month, which penciled against paying directly saves members $500–$1,500/year depending on usage.",
+    a: "A single handyman call-out in Katy runs $95–$140/hr with a 1-hour minimum, so a typical visit costs $125–$200. Gold works out to $42/mo on a 1-year prepaid term and covers 3 visits a month, which penciled against paying directly saves members $500–$1,500/year depending on usage.",
   },
   {
     q: "Which areas are covered?",
-    a: "Fixpass is currently serving Katy, TX and nearby zip codes. Expanding to Cypress, Richmond, and Fulshear next. If you're just outside our footprint and want to join a waitlist, email hello@getfixpass.com.",
+    a: "Fixpass is currently serving Katy, TX and nearby zip codes. Expanding to Cypress, Fulshear, Richmond, and Sugar Land next. If you're just outside our footprint and want to join a waitlist, email hello@getfixpass.com.",
   },
   {
     q: "Is Fixpass a handyman marketplace?",
@@ -237,7 +237,7 @@ export const testimonials = [
   },
   {
     quote:
-      "As a landlord, predictable monthly maintenance is a game changer. Response times are fast and communication is excellent.",
+      "As a landlord, predictable maintenance on a prepaid plan takes a real weight off. Response times are fast and communication is excellent.",
     name: "Marcus T.",
     role: "Property owner",
   },

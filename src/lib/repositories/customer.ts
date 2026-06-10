@@ -188,7 +188,10 @@ export async function getCustomerSnapshot(
       subscription: subRes.data
         ? {
             status: (subRes.data.status as string) ?? "inactive",
-            billingCycle: (subRes.data.billing_cycle as string) ?? "monthly",
+            // Fallback is "prepaid", not a guessed cycle — legacy rows
+            // without billing_cycle shouldn't claim a term we can't verify,
+            // and "monthly" is banned language (we never bill monthly).
+            billingCycle: (subRes.data.billing_cycle as string) ?? "prepaid",
             visitsUsed,
             visitsRemaining,
             renewalDate: subRes.data.current_period_end

@@ -26,7 +26,7 @@ const detailedSteps = [
     index: "01",
     title: "Pick a plan + confirm coverage",
     copy:
-      "Silver, Gold, or Platinum. One monthly charge via Stripe, one registered property per membership. Switch tiers or cancel anytime.",
+      "Silver, Gold, or Platinum. One prepaid term — 3, 6, or 12 months — billed once via Stripe, one registered property per membership. Switch tiers when your term renews.",
     bullets: [
       "Plan picks in under 60 seconds",
       "Stripe handles checkout + invoicing",

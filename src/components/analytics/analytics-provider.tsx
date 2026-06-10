@@ -20,6 +20,7 @@ export function AnalyticsProvider() {
   useEffect(() => {
     if (!pathname) return;
     const url = search?.toString() ? `${pathname}?${search.toString()}` : pathname;
+    // PostHog reserved event — intentionally not a Funnel constant.
     track("$pageview", { $current_url: url });
   }, [pathname, search]);
 

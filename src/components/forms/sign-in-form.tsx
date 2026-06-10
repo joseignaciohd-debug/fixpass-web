@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { OAuthButtons, OAuthDivider } from "@/components/forms/oauth-buttons";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { Funnel, identifyUser, track } from "@/lib/analytics/posthog";
@@ -30,6 +31,8 @@ const initialErrorMap: Record<string, string> = {
   config: "Sign-in is not configured correctly. Try again or contact support.",
   confirm_invalid: "That confirmation link is missing or malformed. Try signing in or request a new confirmation.",
   confirm_expired: "That confirmation link has expired or was already used. Sign in to request a new one.",
+  oauth: "We couldn't finish signing you in. Try again.",
+  oauth_cancelled: "Sign-in was cancelled before it finished. Try again whenever you're ready.",
 };
 
 export function SignInForm({ nextPath, initialError }: { nextPath?: string; initialError?: string }) {
@@ -134,7 +137,12 @@ export function SignInForm({ nextPath, initialError }: { nextPath?: string; init
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-7 grid gap-5">
+      <div className="mt-7 grid gap-5">
+        <OAuthButtons nextPath={nextPath} />
+        <OAuthDivider />
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-5 grid gap-5">
         <label className="grid gap-2 text-sm font-medium text-ink">
           Email
           <input
